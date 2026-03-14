@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -243,6 +243,7 @@
             font-weight: 500;
             display: flex;
             align-items: center;
+            align-items: flex-start;
             gap: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -555,11 +556,17 @@
         </button>
     </main>
 
-    <!-- 4. CONTACTS BOOK -->
+    <!-- 4. CONTACTS BOOK (WITH FILE UPLOAD) -->
     <main id="view-contacts" class="view-container hide-scroll">
         <div class="flex justify-between items-center mb-4 mt-2">
             <h2 class="text-xl font-bold text-slate-800">Phonebook</h2>
             <div class="flex gap-2">
+                <!-- Import from File Button -->
+                <button onclick="document.getElementById('import-contacts-file').click()" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center active:scale-95 transition-transform" title="Import File">
+                    <i data-lucide="file-up" class="w-4 h-4"></i>
+                </button>
+                <input type="file" id="import-contacts-file" class="hidden" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onchange="importContactsFromFile(event)">
+                
                 <button onclick="requestContactSync(true)" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center active:scale-95 transition-transform" title="Sync from Phone">
                     <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                 </button>
@@ -627,7 +634,7 @@
 
         <div class="text-center mt-6 opacity-50">
             <p class="text-xs font-bold text-slate-500">NexSMS Premium</p>
-            <p class="text-[10px] text-slate-400">Version 5.0 (Stable Production)</p>
+            <p class="text-[10px] text-slate-400">Version 6.0 (Production / Real API)</p>
         </div>
     </main>
 
@@ -716,13 +723,35 @@
         <div class="mb-4 shrink-0">
             <label class="text-xs font-bold text-slate-500 uppercase">Add Numbers (Comma/Newline separated)</label>
             <textarea id="mg-numbers" class="input-modern text-sm h-24 resize-none mt-1" placeholder="Paste numbers here..."></textarea>
-            <button onclick="addNumbersToGroup()" class="w-full bg-slate-800 text-white py-2 rounded-xl mt-2 font-semibold text-sm active:scale-95 transition-transform">Save Numbers</button>
+            
+            <div class="flex gap-2 mt-2">
+                <button onclick="addNumbersToGroup()" class="flex-1 bg-slate-800 text-white py-2 rounded-xl font-semibold text-sm active:scale-95 transition-transform">Save Pasted</button>
+                <button onclick="document.getElementById('import-group-file').click()" class="w-12 bg-indigo-50 text-primary rounded-xl flex justify-center items-center active:scale-95" title="Import from Excel/CSV"><i data-lucide="file-up" class="w-4 h-4"></i></button>
+                <input type="file" id="import-group-file" class="hidden" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onchange="importGroupFromFile(event)">
+                <button onclick="openGroupContactSelector()" class="w-12 bg-emerald-50 text-emerald-600 rounded-xl flex justify-center items-center active:scale-95" title="Select Contacts"><i data-lucide="users" class="w-4 h-4"></i></button>
+            </div>
         </div>
         <div class="flex-1 overflow-y-auto hide-scroll border-t border-slate-100 pt-3">
             <p class="text-xs font-bold text-slate-500 mb-2">Saved Numbers</p>
             <div id="mg-list" class="space-y-1"></div>
         </div>
         <button onclick="deleteCurrentGroup()" class="w-full bg-red-50 text-red-500 py-3 rounded-xl font-bold shrink-0 mt-3 border border-red-100 active:scale-95 transition-transform">Delete Group</button>
+    </div>
+
+    <!-- Select Contacts for Group Sheet -->
+    <div id="group-select-contacts-sheet" class="bottom-sheet h-[80vh] flex flex-col">
+        <div class="flex justify-between items-center mb-4 shrink-0">
+            <h3 class="font-bold text-lg text-slate-800">Select Contacts</h3>
+            <button onclick="closeGroupContactSelector()"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+        </div>
+        <div class="relative mb-3 shrink-0">
+            <input type="text" id="gsc-search" class="input-modern py-2.5 pl-10 text-sm" placeholder="Search..." oninput="renderGroupContactSelector()">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+        </div>
+        <div id="gsc-list" class="flex-1 overflow-y-auto hide-scroll space-y-1">
+            <!-- populated by JS -->
+        </div>
+        <button onclick="confirmGroupContactSelection()" class="w-full bg-primary text-white py-3 rounded-xl font-bold shrink-0 mt-3 active:scale-95 transition-transform">Add Selected</button>
     </div>
 
 </div>
@@ -757,8 +786,27 @@
             phoneCol: '',
             previewIndex: 0
         },
-        activeSheetTarget: null
+        activeSheetTarget: null,
+        tempSelectedGroupContacts: []
     };
+
+    // ================= REAL API ERROR HANDLING LOGIC =================
+    function getApiErrorMessage(code) {
+        let ipMatch = code.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/);
+        let detectedIP = ipMatch ? ipMatch[0] : "খুঁজে পাওয়া যায়নি";
+
+        if (code.includes("1001")) return "অকার্যকর বা ভুল মোবাইল নম্বর!";
+        if (code.includes("1006")) return "আপনার ব্যালেন্সের মেয়াদ শেষ!";
+        if (code.includes("1007")) return "অ্যাকাউন্টে পর্যাপ্ত SMS ব্যালেন্স নেই!";
+        if (code.includes("1012")) return "মাস্কিং এসএমএস অবশ্যই বাংলায় হতে হবে!";
+        if (code.includes("1002")) return "সেন্ডার আইডি (Sender ID) ভুল!";
+        
+        if (code.includes("1032")) {
+            return `আপনার সার্ভারের আইপি হোয়াইটলিস্ট করা নেই।<br>Your IP: <b style="color: #ef4444;">${detectedIP}</b>`;
+        }
+        
+        return `অজানা সমস্যা! সার্ভার রেসপন্স: ${code.substring(0, 15)}`;
+    }
 
     // ================= INIT & SECURITY =================
     window.onload = () => {
@@ -918,7 +966,7 @@
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         let color = type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#3b82f6';
-        toast.innerHTML = `<div style="width:8px; height:8px; border-radius:50%; background:${color}"></div> ${msg}`;
+        toast.innerHTML = `<div style="width:8px; height:8px; border-radius:50%; background:${color}; flex-shrink:0; margin-top:5px;"></div> <div class="flex-1">${msg}</div>`;
         toast.className = 'toast';
         container.appendChild(toast);
         setTimeout(() => {
@@ -944,25 +992,8 @@
         document.getElementById('sheet-overlay').classList.remove('open');
         state.activeSheetTarget = null;
     }
-function getApiErrorMessage(code) {
-    // BulkSMSBD এরর রেসপন্সে যদি IP নম্বর থাকে, সেটি খুঁজে বের করার লজিক
-    let ipMatch = code.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/);
-    let detectedIP = ipMatch ? ipMatch[0] : "খুঁজে পাওয়া যায়নি";
 
-    if (code.includes("1001")) return "অকার্যকর বা ভুল মোবাইল নম্বর!";
-    if (code.includes("1006")) return "আপনার ব্যালেন্সের মেয়াদ শেষ!";
-    if (code.includes("1007")) return "অ্যাকাউন্টে পর্যাপ্ত SMS ব্যালেন্স নেই!";
-    if (code.includes("1012")) return "মাস্কিং এসএমএস অবশ্যই বাংলায় হতে হবে!";
-    if (code.includes("1002")) return "সেন্ডার আইডি (Sender ID) ভুল!";
-    
-    // ১০৩২ এরর হলে আইপি নম্বরসহ দেখাবে
-    if (code.includes("1032")) {
-        return `আপনার সার্ভারের আইপি হোয়াইটলিস্ট করা নেই।<br>Your IP: <b class="text-red-600">${detectedIP}</b>`;
-    }
-    
-    return `অজানা সমস্যা! সার্ভার রেসপন্স: ${code.substring(0, 15)}`;
-    }
-    // ================= REAL API INTEGRATION & SMS ENGINE =================
+    // ================= SMS ENGINE (DYNAMIC CALC) =================
     function calculateSingleSmsParts(text) {
         const charCount = text.length;
         const isUnicode = /[^\u0000-\u00ff]/.test(text);
@@ -1030,20 +1061,20 @@ function getApiErrorMessage(code) {
             });
             
             let text = await res.text();
+            let isError = ["1001", "1002", "1003", "1004", "1005", "1006", "1007", "1012", "1032"].some(code => text.includes(code));
             
-            // Check success based on standard API practices (Status 200/202 or success text)
-            if(res.ok || text.includes('202') || text.toLowerCase().includes('success')) {
-                showToast("SMS Sent Successfully!", "success");
-                logHistory('Quick SMS', phone, 'Success');
-                document.getElementById('quick-msg').value = '';
-                calcSMS('quick');
-                checkBalance();
-            } else {
+            if(!res.ok || isError) {
                 throw new Error(text || "API Error Response");
             }
+            
+            showToast("SMS Sent Successfully!", "success");
+            logHistory('Quick SMS', phone, 'Success');
+            document.getElementById('quick-msg').value = '';
+            calcSMS('quick');
+            checkBalance();
         } catch(e) {
-            let errmsg = getApiErrorMessage(e)
-            showToast(errmsg, "error");
+            let errMsg = getApiErrorMessage(e.message || "Network Error");
+            showToast(errMsg, "error");
             logHistory('Quick SMS', phone, 'Failed');
         }
     }
@@ -1106,6 +1137,7 @@ function getApiErrorMessage(code) {
                 console.error(err);
                 showToast("Error reading Excel/CSV file", "error");
             }
+            e.target.value = ''; // Reset
         };
         reader.readAsArrayBuffer(file);
     }
@@ -1329,27 +1361,119 @@ function getApiErrorMessage(code) {
             });
             
             let text = await res.text();
+            let isError = ["1001", "1002", "1003", "1004", "1005", "1006", "1007", "1012", "1032"].some(code => text.includes(code));
             
-            if(res.ok || text.includes('202') || text.toLowerCase().includes('success')) {
-                showToast(`Campaign sent to ${stats.totalNumbers} contacts!`, "success");
-                logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Success');
-                document.getElementById('bulk-msg').value = '';
-                
-                if(bulkMode === 'raw') {
-                    document.getElementById('bulk-numbers').value = '';
-                    state.bulkState.raw = [];
-                    processBulkNumbers();
-                } else if (bulkMode === 'file') {
-                    clearFile();
-                }
-                checkBalance();
-            } else {
+            if(!res.ok || isError) {
                 throw new Error(text || "API Error Response");
             }
+            
+            showToast(`Campaign sent to ${stats.totalNumbers} contacts!`, "success");
+            logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Success');
+            document.getElementById('bulk-msg').value = '';
+            
+            if(bulkMode === 'raw') {
+                document.getElementById('bulk-numbers').value = '';
+                state.bulkState.raw = [];
+                processBulkNumbers();
+            } else if (bulkMode === 'file') {
+                clearFile();
+            }
+            checkBalance();
         } catch(e) {
-            showToast("Campaign Failed: Network or API Error", "error");
+            let errMsg = getApiErrorMessage(e.message || "Network Error");
+            showToast(errMsg, "error");
             logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Failed');
         }
+    }
+
+    // ================= FILE UPLOAD FOR CONTACTS & GROUPS =================
+    async function importContactsFromFile(e) {
+        const file = e.target.files[0];
+        if(!file) return;
+        showToast("Processing file...", "info");
+        
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                
+                if(rows.length === 0) return showToast("File is empty", "error");
+                
+                const headers = Object.keys(rows[0]);
+                let pCol = headers.find(h => /phone|mobile|contact|number|sms/i.test(h)) || headers[0];
+                let nCol = headers.find(h => /name|title|first/i.test(h));
+
+                let added = 0;
+                rows.forEach(row => {
+                    let phone = formatPhone(row[pCol]);
+                    let name = nCol && row[nCol] ? row[nCol] : "Unknown";
+                    if(phone.length === 13 && !state.allContacts.find(x => x.phone === phone)) {
+                        state.allContacts.push({ id: Date.now() + Math.random(), name, phone });
+                        added++;
+                    }
+                });
+                
+                if(added > 0) {
+                    saveData();
+                    renderAllContacts();
+                    showToast(`Imported ${added} contacts!`, "success");
+                } else {
+                    showToast("No new valid contacts found", "warning");
+                }
+            } catch (err) {
+                showToast("Error reading file", "error");
+            }
+            e.target.value = ''; 
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    async function importGroupFromFile(e) {
+        let id = parseInt(document.getElementById('mg-id').value);
+        let g = state.groups.find(x => x.id === id);
+        if(!g) return;
+
+        const file = e.target.files[0];
+        if(!file) return;
+        showToast("Reading file...", "info");
+        
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                
+                if(rows.length === 0) return showToast("File is empty", "error");
+                
+                const headers = Object.keys(rows[0]);
+                let pCol = headers.find(h => /phone|mobile|contact|number|sms/i.test(h)) || headers[0];
+
+                let added = 0;
+                rows.forEach(row => {
+                    let clean = formatPhone(row[pCol]);
+                    if(clean.length === 13 && !g.numbers.includes(clean)) {
+                        g.numbers.push(clean);
+                        added++;
+                    }
+                });
+                
+                if(added > 0) {
+                    saveData();
+                    renderGroupNumbers(g);
+                    renderGroups();
+                    showToast(`Added ${added} numbers to group`, "success");
+                } else {
+                    showToast("No valid new numbers found", "warning");
+                }
+            } catch (err) {
+                showToast("Error reading file", "error");
+            }
+            e.target.value = ''; 
+        };
+        reader.readAsArrayBuffer(file);
     }
 
     // ================= CONTACTS & GROUPS =================
@@ -1522,6 +1646,68 @@ function getApiErrorMessage(code) {
         closeAllSheets();
     }
 
+    // --- Select Contacts into Group ---
+    function openGroupContactSelector() {
+        state.tempSelectedGroupContacts = [];
+        document.getElementById('gsc-search').value = '';
+        renderGroupContactSelector();
+        document.getElementById('manage-group-sheet').classList.remove('open');
+        document.getElementById('group-select-contacts-sheet').classList.add('open');
+    }
+
+    function closeGroupContactSelector() {
+        document.getElementById('group-select-contacts-sheet').classList.remove('open');
+        document.getElementById('manage-group-sheet').classList.add('open');
+    }
+
+    function renderGroupContactSelector() {
+        let search = document.getElementById('gsc-search').value.toLowerCase();
+        let filtered = state.allContacts.filter(c => c.name.toLowerCase().includes(search) || c.phone.includes(search));
+        filtered.sort((a,b) => a.name.localeCompare(b.name));
+
+        let html = filtered.map(c => {
+            let isChecked = state.tempSelectedGroupContacts.includes(c.phone) ? 'checked' : '';
+            return `
+            <label class="flex items-center gap-3 p-3 bg-white border border-slate-50 rounded-xl cursor-pointer active:bg-slate-50">
+                <input type="checkbox" class="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary" value="${c.phone}" onchange="toggleTempContact(this)" ${isChecked}>
+                <div class="flex-1">
+                    <p class="font-bold text-sm text-slate-800">${c.name}</p>
+                    <p class="text-[10px] text-slate-500 font-mono">${c.phone}</p>
+                </div>
+            </label>
+            `;
+        }).join('');
+        document.getElementById('gsc-list').innerHTML = html || '<p class="text-xs text-slate-400 text-center mt-4">No contacts found.</p>';
+    }
+
+    function toggleTempContact(checkbox) {
+        if(checkbox.checked) state.tempSelectedGroupContacts.push(checkbox.value);
+        else state.tempSelectedGroupContacts = state.tempSelectedGroupContacts.filter(n => n !== checkbox.value);
+    }
+
+    function confirmGroupContactSelection() {
+        let id = parseInt(document.getElementById('mg-id').value);
+        let g = state.groups.find(x => x.id === id);
+        if(!g) return;
+
+        let added = 0;
+        state.tempSelectedGroupContacts.forEach(phone => {
+            if(!g.numbers.includes(phone)) {
+                g.numbers.push(phone);
+                added++;
+            }
+        });
+
+        if(added > 0) {
+            saveData();
+            renderGroupNumbers(g);
+            renderGroups();
+            showToast(`Added ${added} contacts to group`, "success");
+        }
+        closeGroupContactSelector();
+    }
+
+
     function renderBulkGroups() {
         let html = state.groups.map(g => `
             <label class="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl cursor-pointer shadow-sm">
@@ -1635,7 +1821,7 @@ function getApiErrorMessage(code) {
     // ---- REAL BALANCE API FETCH ----
     async function checkBalance() {
         if(!state.api.url || !state.api.key) {
-            document.getElementById('dash-balance').innerText = `API Missing`;
+            document.getElementById('dash-balance').innerText = `৳ 0.00`;
             return;
         }
 
@@ -1644,24 +1830,26 @@ function getApiErrorMessage(code) {
 
         try {
             let res = await fetch(`${state.api.url}/balance?api_key=${state.api.key}`);
-            if(!res.ok) throw new Error();
-            
             let dataText = await res.text();
-            let balanceVal = 0;
             
+            // Validate API Errors using the exact logic
+            let isError = ["1001", "1002", "1006", "1007", "1012", "1032"].some(code => dataText.includes(code));
+            if (!res.ok || isError) throw new Error(dataText);
+            
+            let balanceVal = 0;
             try {
-                // Try parsing JSON first
                 let data = JSON.parse(dataText);
                 balanceVal = data.balance || 0;
             } catch(jsonErr) {
-                // Fallback: If gateway returns plain text number
                 let parsed = parseFloat(dataText);
                 if(!isNaN(parsed)) balanceVal = parsed;
             }
 
             document.getElementById('dash-balance').innerText = `৳ ${parseFloat(balanceVal).toFixed(2)}`;
         } catch(e) {
-            document.getElementById('dash-balance').innerText = `API Error`;
+            let errMsg = getApiErrorMessage(e.message || "Network Error");
+            showToast(errMsg, "error");
+            document.getElementById('dash-balance').innerText = `Error`;
         } finally {
             if(icon) icon.classList.remove('animate-spin');
         }
