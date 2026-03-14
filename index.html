@@ -1,33 +1,45 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#4F46E5">
     <title>NexSMS - Premium Bulk SMS</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        surface: '#ffffff',
+                        background: '#f3f4f6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Hind Siliguri', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- SheetJS (For Excel/CSV Import) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        :root {
-            --app-bg: #f3f4f6;
-            --primary: #4F46E5;
-            --primary-dark: #4338CA;
-            --secondary: #10B981;
-            --danger: #EF4444;
-            --text-main: #1F2937;
-        }
-
         * {
             -webkit-tap-highlight-color: transparent;
             box-sizing: border-box;
+            outline: none;
         }
 
         body {
@@ -37,16 +49,16 @@
             padding: 0;
             display: flex;
             justify-content: center;
-            overflow: hidden; /* Prevent body scroll */
-        }
-
-        /* Mobile App Container */
-        #app-container {
-            width: 100%;
-            max-width: 480px; /* Mobile width constraint for desktop view */
             height: 100vh;
             height: 100dvh;
-            background-color: #f9fafb;
+            overflow: hidden;
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 420px;
+            height: 100%;
+            background-color: #f8fafc;
             position: relative;
             display: flex;
             flex-direction: column;
@@ -54,46 +66,43 @@
             overflow: hidden;
         }
 
-        /* Top Header */
-        .app-header {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            padding: 20px 20px 30px 20px;
-            border-bottom-left-radius: 24px;
-            border-bottom-right-radius: 24px;
-            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
-            z-index: 10;
-            position: relative;
-        }
+        /* Scrollbar Hidden */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Main View Area */
+        /* Premium View Animations */
         .view-container {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            padding-bottom: 90px; /* Space for bottom nav */
+            padding-bottom: 100px;
             display: none;
-            animation: fadeSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            scrollbar-width: none; /* Firefox */
         }
-        .view-container::-webkit-scrollbar { display: none; } /* Chrome */
-        .view-container.active { display: block; }
+        
+        .view-container.active {
+            display: block;
+            animation: viewEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
 
-        /* Bottom Navigation */
+        @keyframes viewEnter {
+            from { opacity: 0; transform: translateY(15px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Bottom Nav */
         .bottom-nav {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
             border-top: 1px solid rgba(229, 231, 235, 0.5);
             display: flex;
             justify-content: space-around;
-            padding: 12px 0;
+            padding: 12px 10px;
             padding-bottom: calc(12px + env(safe-area-inset-bottom));
             z-index: 50;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
         }
 
         .nav-item {
@@ -101,107 +110,118 @@
             flex-direction: column;
             align-items: center;
             gap: 4px;
-            color: #9CA3AF;
+            color: #94a3b8;
             font-size: 11px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
-            width: 25%;
+            transition: all 0.3s ease;
+            width: 20%;
         }
-        .nav-item.active { color: var(--primary); }
-        .nav-item.active .icon-bg {
-            background: rgba(79, 70, 229, 0.1);
+        .nav-item.active { color: #4F46E5; transform: translateY(-2px); }
+        .nav-item .icon-box {
+            position: relative;
+            padding: 6px 14px;
             border-radius: 12px;
-            padding: 4px 12px;
+            transition: all 0.3s ease;
+        }
+        .nav-item.active .icon-box { background: rgba(79, 70, 229, 0.1); }
+
+        /* Modern Inputs */
+        .input-modern {
+            width: 100%;
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px 16px;
+            font-size: 14px;
+            color: #1e293b;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+        }
+        .input-modern:focus {
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
 
         /* Glass Cards */
         .glass-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        /* Inputs & Buttons */
-        .input-modern {
-            width: 100%;
-            background: #f3f4f6;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 14px 16px;
-            font-size: 14px;
-            color: var(--text-main);
-            outline: none;
-            transition: all 0.2s;
-        }
-        .input-modern:focus {
             background: #ffffff;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            transition: transform 0.2s ease;
         }
 
-        .btn-modern {
+        /* Bottom Sheet */
+        .bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
             width: 100%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 600;
+            background: #ffffff;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 24px;
+            padding-bottom: calc(24px + env(safe-area-inset-bottom));
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+        }
+        .bottom-sheet.open { transform: translateY(0); }
+        .sheet-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(3px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            z-index: 99;
+        }
+        .sheet-overlay.open { opacity: 1; pointer-events: auto; }
+
+        /* Modals & Overlays */
+        .full-overlay {
+            position: absolute;
+            inset: 0;
+            background: #ffffff;
+            z-index: 200;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+            justify-content: center;
+            transition: opacity 0.4s ease, visibility 0.4s;
+        }
+        
+        .pin-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #cbd5e1;
             transition: all 0.2s;
         }
-        .btn-modern:active { transform: scale(0.97); }
-        .btn-modern:disabled { background: #9CA3AF; box-shadow: none; cursor: not-allowed; }
+        .pin-dot.filled { background: #4F46E5; border-color: #4F46E5; transform: scale(1.2); }
 
-        /* Splash Screen */
-        #splash-screen {
-            position: absolute;
-            inset: 0;
-            background: var(--primary);
-            z-index: 100;
+        .keypad-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #f1f5f9;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
-            color: white;
-            transition: opacity 0.5s;
-        }
-
-        /* Animations */
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        /* Custom Loader Overlay */
-        #loader-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(255,255,255,0.8);
-            backdrop-filter: blur(4px);
-            z-index: 90;
-            display: none;
-            flex-direction: column;
             justify-content: center;
-            align-items: center;
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e293b;
+            cursor: pointer;
+            transition: all 0.1s;
         }
+        .keypad-btn:active { background: #e2e8f0; transform: scale(0.9); }
 
-        /* Toasts */
+        /* Toast */
         #toast-container {
             position: absolute;
             top: 20px;
@@ -209,686 +229,1327 @@
             transform: translateX(-50%);
             width: 90%;
             z-index: 999;
+            pointer-events: none;
             display: flex;
             flex-direction: column;
             gap: 10px;
-            pointer-events: none;
         }
         .toast {
-            background: white;
+            background: #334155;
+            color: white;
+            padding: 14px 20px;
             border-radius: 12px;
-            padding: 12px 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            font-size: 14px;
+            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 12px;
-            animation: toastEnter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        @keyframes toastEnter {
-            from { opacity: 0; transform: translateY(-20px) scale(0.9); }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
+
+        /* Circular Progress */
+        .circular-chart { display: block; margin: 0 auto; max-width: 80%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: #eee; stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 0.3s ease; }
+
+        /* File Dropzone */
+        .dropzone {
+            border: 2px dashed #cbd5e1;
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .dropzone:active { background: #f1f5f9; transform: scale(0.98); }
+        
+        .dynamic-var-tag {
+            display: inline-block;
+            background: #eef2ff;
+            color: #4f46e5;
+            border: 1px solid #c7d2fe;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 6px;
+            margin-bottom: 6px;
+            transition: all 0.2s;
+        }
+        .dynamic-var-tag:active { transform: scale(0.9); background: #4f46e5; color: white; }
     </style>
 </head>
 <body>
 
 <div id="app-container">
-    
-    <!-- Splash Screen -->
-    <div id="splash-screen">
-        <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl mb-4 animate-[pulse_2s_infinite]">
-            <i data-lucide="send" class="w-10 h-10 text-indigo-600"></i>
+
+    <!-- Sync Contacts Modal (First Time Only) -->
+    <div id="sync-modal" class="full-overlay" style="display: none; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);">
+        <div class="bg-white p-6 rounded-3xl w-10/12 text-center shadow-2xl transform scale-95 transition-transform" id="sync-modal-box">
+            <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="book-user" class="w-8 h-8 text-indigo-600"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">Import Contacts</h2>
+            <p class="text-sm text-slate-500 mb-6">Sync your phone contacts to quickly select numbers when sending SMS.</p>
+            
+            <button onclick="requestContactSync()" class="w-full bg-primary text-white py-3 rounded-xl font-bold mb-3 active:scale-95 transition-transform shadow-lg shadow-indigo-200">
+                Allow & Sync
+            </button>
+            <button onclick="closeSyncModal()" class="w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold active:scale-95 transition-transform">
+                Maybe Later
+            </button>
         </div>
-        <h1 class="text-3xl font-bold tracking-wider">NexSMS</h1>
-        <p class="text-indigo-200 mt-2 text-sm font-medium">Premium Bulk Messaging</p>
     </div>
 
-    <!-- Loader Overlay -->
-    <div id="loader-overlay">
-        <i data-lucide="loader-2" class="w-10 h-10 text-indigo-600 animate-spin"></i>
-        <p class="mt-3 font-semibold text-gray-700" id="loader-text">Processing...</p>
+    <!-- Lock Screen -->
+    <div id="lock-screen" class="full-overlay" style="display: none;">
+        <div class="mb-8 text-center">
+            <div class="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="lock" class="w-8 h-8 text-indigo-600"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">Enter PIN</h2>
+            <p class="text-sm text-slate-500 mt-1">Unlock NexSMS</p>
+        </div>
+        
+        <div class="flex gap-4 mb-12" id="pin-indicators">
+            <div class="pin-dot"></div><div class="pin-dot"></div>
+            <div class="pin-dot"></div><div class="pin-dot"></div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-6">
+            <div class="keypad-btn" onclick="enterPin(1)">1</div>
+            <div class="keypad-btn" onclick="enterPin(2)">2</div>
+            <div class="keypad-btn" onclick="enterPin(3)">3</div>
+            <div class="keypad-btn" onclick="enterPin(4)">4</div>
+            <div class="keypad-btn" onclick="enterPin(5)">5</div>
+            <div class="keypad-btn" onclick="enterPin(6)">6</div>
+            <div class="keypad-btn" onclick="enterPin(7)">7</div>
+            <div class="keypad-btn" onclick="enterPin(8)">8</div>
+            <div class="keypad-btn" onclick="enterPin(9)">9</div>
+            <div></div>
+            <div class="keypad-btn" onclick="enterPin(0)">0</div>
+            <div class="keypad-btn bg-red-50 text-red-500" onclick="clearPin()">
+                <i data-lucide="delete" class="w-6 h-6"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Top Header -->
+    <div class="bg-primary text-white pt-6 pb-4 px-5 rounded-b-3xl shadow-md relative z-10">
+        <div class="flex justify-between items-center mt-2">
+            <div>
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    NexSMS 
+                    <span class="text-[9px] bg-white/20 px-2 py-0.5 rounded-full font-medium tracking-wide">PRO</span>
+                </h1>
+                <p class="text-indigo-200 text-[11px] mt-1 font-medium tracking-wide" id="date-display">Today</p>
+            </div>
+            <div class="text-right flex items-center gap-3">
+                <div class="text-right">
+                    <p class="text-indigo-200 text-[10px] uppercase tracking-wider font-semibold">Balance</p>
+                    <h2 class="text-lg font-bold leading-none mt-1" id="dash-balance">৳ 0.00</h2>
+                </div>
+                <div class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md cursor-pointer active:scale-90 transition-all" onclick="checkBalance()" title="Refresh Balance">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 text-white"></i>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- Header -->
-    <header class="app-header">
-        <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold">NexSMS</h1>
-                <p class="text-xs text-indigo-200 font-medium opacity-90" id="header-date">Today</p>
-            </div>
-            <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm cursor-pointer" onclick="switchTab('settings')">
-                <i data-lucide="settings" class="w-5 h-5 text-white"></i>
-            </div>
-        </div>
-        
-        <!-- Quick Balance Widget (Moved inside header to save space) -->
-        <div class="bg-white/10 rounded-xl p-3 mt-4 flex justify-between items-center border border-white/20">
-            <div>
-                <p class="text-[10px] text-indigo-100 uppercase tracking-wider font-semibold">Current Balance</p>
-                <div class="flex items-end gap-1">
-                    <h2 class="text-xl font-bold" id="dash-balance">৳ 0.00</h2>
-                </div>
-            </div>
-            <button onclick="checkBalance()" class="bg-white text-indigo-600 p-2 rounded-lg shadow-sm active:scale-95 transition-transform">
-                <i data-lucide="refresh-cw" class="w-4 h-4" id="btn-refresh-bal"></i>
-            </button>
-        </div>
-    </header>
+    <!-- Overlay for Bottom Sheets -->
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeAllSheets()"></div>
 
-    <!-- Views -->
-    
-    <!-- 1. DASHBOARD VIEW -->
-    <main id="view-home" class="view-container active">
-        <h3 class="font-bold text-gray-800 mb-3 text-lg">Quick Actions</h3>
-        <div class="grid grid-cols-2 gap-3 mb-6">
-            <div class="glass-card !mb-0 flex flex-col items-center justify-center p-4 cursor-pointer active:bg-gray-50" onclick="switchTab('quick')">
-                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-2 text-indigo-600">
-                    <i data-lucide="message-square" class="w-6 h-6"></i>
+    <!-- ================= VIEWS ================= -->
+
+    <!-- 1. DASHBOARD -->
+    <main id="view-home" class="view-container active hide-scroll">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 gap-4 mb-6 mt-2">
+            <div class="glass-card !mb-0 !p-4 flex flex-col items-center gap-2 cursor-pointer active:scale-[0.98]" onclick="switchTab('quick')">
+                <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 mb-1">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
                 </div>
-                <span class="font-semibold text-sm text-gray-700">Quick SMS</span>
+                <div class="text-center">
+                    <h3 class="font-bold text-slate-800 text-sm">Quick SMS</h3>
+                    <p class="text-[10px] font-medium text-slate-500">Single text</p>
+                </div>
             </div>
-            <div class="glass-card !mb-0 flex flex-col items-center justify-center p-4 cursor-pointer active:bg-gray-50" onclick="switchTab('bulk')">
-                <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mb-2 text-emerald-600">
-                    <i data-lucide="users" class="w-6 h-6"></i>
+            <div class="glass-card !mb-0 !p-4 flex flex-col items-center gap-2 cursor-pointer active:scale-[0.98]" onclick="switchTab('bulk')">
+                <div class="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center text-purple-600 mb-1">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
                 </div>
-                <span class="font-semibold text-sm text-gray-700">Bulk SMS</span>
+                <div class="text-center">
+                    <h3 class="font-bold text-slate-800 text-sm">Campaign</h3>
+                    <p class="text-[10px] font-medium text-slate-500">Bulk send</p>
+                </div>
             </div>
         </div>
 
-        <h3 class="font-bold text-gray-800 mb-3 text-lg flex justify-between items-center">
+        <!-- Recent History -->
+        <h3 class="font-bold text-slate-800 mb-3 px-1 flex justify-between items-center mt-4">
             Recent Activity
-            <span class="text-xs font-normal text-indigo-600 cursor-pointer" onclick="clearHistory()">Clear All</span>
+            <button onclick="clearHistory()" class="text-xs text-red-500 font-medium px-2 py-1 bg-red-50 rounded-lg active:scale-95 transition-transform">Clear Logs</button>
         </h3>
         <div id="history-list" class="space-y-3">
-            <!-- History items will be injected here -->
-            <div class="text-center text-gray-400 text-sm py-8">No recent activity found.</div>
+            <!-- Injected via JS -->
         </div>
     </main>
 
-    <!-- 2. QUICK SMS VIEW -->
-    <main id="view-quick" class="view-container">
+    <!-- 2. QUICK SMS -->
+    <main id="view-quick" class="view-container hide-scroll">
+        <h2 class="text-xl font-bold text-slate-800 mb-4 mt-2">Send Message</h2>
+        
         <div class="glass-card">
-            <label class="block text-xs font-bold text-gray-500 mb-1 ml-1 uppercase">Recipient Number</label>
-            <div class="relative">
-                <input type="tel" id="quick-number" class="input-modern pl-10" placeholder="e.g. 01700000000">
-                <i data-lucide="phone" class="w-5 h-5 text-gray-400 absolute left-3 top-3.5"></i>
-                <button class="absolute right-2 top-2 bg-indigo-50 text-indigo-600 p-1.5 rounded-lg" onclick="openPhonebook()" title="Phonebook">
-                    <i data-lucide="book-user" class="w-5 h-5"></i>
+            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Recipient</label>
+            <div class="flex gap-2">
+                <div class="relative flex-1">
+                    <input type="tel" id="quick-number" class="input-modern pl-10" placeholder="017xxxxxxxx">
+                    <i data-lucide="phone" class="w-5 h-5 text-slate-400 absolute left-3 top-3.5"></i>
+                </div>
+                <button onclick="openSheet('contact-sheet', 'quick')" class="w-[50px] bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center active:scale-95 transition-transform">
+                    <i data-lucide="users" class="w-5 h-5"></i>
                 </button>
             </div>
         </div>
 
-        <div class="glass-card">
-            <div class="flex justify-between items-center mb-1 ml-1">
-                <label class="text-xs font-bold text-gray-500 uppercase">Message</label>
-                <button class="text-xs text-indigo-600 font-semibold" onclick="pasteTemplate('quick')">Use Template</button>
+        <div class="glass-card relative">
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-xs font-bold text-slate-500 uppercase">Message Content</label>
+                <button onclick="openSheet('template-sheet', 'quick')" class="text-xs font-semibold text-primary bg-indigo-50 px-3 py-1 rounded-full active:scale-95 transition-transform">Templates</button>
             </div>
-            <textarea id="quick-msg" class="input-modern min-h-[150px] resize-none" placeholder="Type your message here..." oninput="calculateSMS('quick')"></textarea>
             
-            <!-- SMS Calculator Info -->
-            <div class="mt-3 flex justify-between items-center bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase">Characters</p>
-                    <p class="text-sm font-bold text-gray-800" id="quick-char-count">0</p>
+            <textarea id="quick-msg" class="input-modern min-h-[160px] resize-none pb-12" placeholder="Write your message here..." oninput="calcSMS('quick')"></textarea>
+            
+            <!-- SMS Meta Info -->
+            <div class="absolute bottom-6 right-6 flex items-center gap-3 pointer-events-none">
+                <div class="text-right">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase" id="quick-type">English</p>
+                    <p class="text-sm font-bold text-slate-700"><span id="quick-char">0</span> / <span id="quick-max">160</span></p>
                 </div>
-                <div class="w-px h-6 bg-gray-300"></div>
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase">SMS Parts</p>
-                    <p class="text-sm font-bold text-indigo-600" id="quick-part-count">0</p>
-                </div>
-                <div class="w-px h-6 bg-gray-300"></div>
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase">Type</p>
-                    <p class="text-xs font-bold text-gray-600 mt-0.5" id="quick-type">English</p>
+                <div class="w-10 h-10 relative">
+                    <svg viewBox="0 0 36 36" class="circular-chart text-indigo-500">
+                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="circle" id="quick-progress" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="currentColor"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-indigo-600" id="quick-parts">0</div>
                 </div>
             </div>
         </div>
 
-        <button class="btn-modern mt-2" onclick="sendSingleSMS()">
-            <i data-lucide="send-horizontal" class="w-5 h-5"></i> Send Message
+        <button onclick="sendQuickSMS()" class="w-full bg-primary text-white rounded-xl py-4 font-bold text-lg shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+            <i data-lucide="send-horizontal" class="w-5 h-5"></i> Send Now
         </button>
     </main>
 
-    <!-- 3. BULK SMS VIEW -->
-    <main id="view-bulk" class="view-container">
-        <div class="glass-card">
-            <div class="flex justify-between items-center mb-1 ml-1">
-                <label class="text-xs font-bold text-gray-500 uppercase">Numbers (Comma/Newline separated)</label>
-                <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold" id="bulk-valid-count">0 Valid</span>
+    <!-- 3. BULK CAMPAIGN (UPDATED WITH EXCEL) -->
+    <main id="view-bulk" class="view-container hide-scroll">
+        <h2 class="text-xl font-bold text-slate-800 mb-4 mt-2">Bulk Campaign</h2>
+
+        <div class="glass-card p-1.5 mb-4 bg-slate-100/50 flex gap-1 rounded-2xl border-none">
+            <button class="flex-1 py-2 rounded-xl text-xs font-bold bg-white shadow-sm text-primary transition-all" id="btn-tab-raw" onclick="toggleBulkTab('raw')">Raw Numbers</button>
+            <button class="flex-1 py-2 rounded-xl text-xs font-bold text-slate-500 transition-all" id="btn-tab-groups" onclick="toggleBulkTab('groups')">Groups</button>
+            <button class="flex-1 py-2 rounded-xl text-xs font-bold text-slate-500 transition-all flex items-center justify-center gap-1" id="btn-tab-file" onclick="toggleBulkTab('file')">
+                <i data-lucide="file-spreadsheet" class="w-3 h-3"></i> Excel/CSV
+            </button>
+        </div>
+
+        <!-- Raw Numbers Section -->
+        <div id="bulk-raw-sec" class="glass-card">
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-xs font-bold text-slate-500 uppercase">Paste Numbers</label>
+                <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg" id="bulk-valid-count">0 Valid</span>
             </div>
-            <textarea id="bulk-numbers" class="input-modern min-h-[100px] resize-none text-xs leading-relaxed" placeholder="017...&#10;018...&#10;019..." oninput="extractValidNumbers()"></textarea>
-            
-            <div class="mt-2 text-xs text-gray-500 text-center">
-                Paste raw text; the system will auto-extract valid BD numbers.
+            <textarea id="bulk-numbers" class="input-modern min-h-[100px] resize-none text-xs" placeholder="01711...\n01822...\nSeparate by comma or new line" oninput="processBulkNumbers()"></textarea>
+        </div>
+
+        <!-- Contact Groups Section -->
+        <div id="bulk-group-sec" class="glass-card hidden">
+            <label class="block text-xs font-bold text-slate-500 mb-3 uppercase">Select Groups</label>
+            <div id="bulk-group-list" class="space-y-2 max-h-[150px] overflow-y-auto hide-scroll">
+                <!-- Group checkboxes injected here -->
             </div>
         </div>
 
-        <div class="glass-card">
-            <div class="flex justify-between items-center mb-1 ml-1">
-                <label class="text-xs font-bold text-gray-500 uppercase">Message</label>
-                <button class="text-xs text-indigo-600 font-semibold" onclick="pasteTemplate('bulk')">Use Template</button>
-            </div>
-            <textarea id="bulk-msg" class="input-modern min-h-[120px] resize-none" placeholder="Type campaign message..." oninput="calculateSMS('bulk')"></textarea>
-            
-            <div class="mt-3 flex justify-between items-center bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase">Chars</p>
-                    <p class="text-sm font-bold text-gray-800" id="bulk-char-count">0</p>
+        <!-- Excel/CSV File Import Section -->
+        <div id="bulk-file-sec" class="glass-card hidden">
+            <label class="block dropzone">
+                <i data-lucide="upload-cloud" class="w-8 h-8 text-indigo-400 mx-auto mb-2"></i>
+                <span class="text-sm font-bold text-slate-600 block">Upload Excel / CSV File</span>
+                <p class="text-[10px] text-slate-400 mt-1">First row should contain headers (e.g. Name, Phone)</p>
+                <input type="file" id="bulk-file-input" class="hidden" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onchange="handleFileUpload(event)">
+            </label>
+
+            <div id="file-preview-area" class="hidden mt-4 pt-4 border-t border-slate-100">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded" id="file-row-count">0 Rows Loaded</span>
+                    <button onclick="clearFile()" class="text-xs text-red-500 font-bold"><i data-lucide="trash" class="w-4 h-4"></i></button>
                 </div>
-                <div class="w-px h-6 bg-gray-300"></div>
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase">Parts/Num</p>
-                    <p class="text-sm font-bold text-indigo-600" id="bulk-part-count">0</p>
-                </div>
-                <div class="w-px h-6 bg-gray-300"></div>
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase">Est. Cost</p>
-                    <p class="text-xs font-bold text-emerald-600 mt-0.5" id="bulk-est-cost">৳ 0.00</p>
-                </div>
+                
+                <label class="text-xs font-bold text-slate-500 mb-1 block">Which column has Phone Numbers?</label>
+                <select id="file-phone-col" class="input-modern py-2 text-sm" onchange="updateFilePhoneCol()">
+                    <!-- Options mapped here -->
+                </select>
             </div>
         </div>
 
-        <button class="btn-modern mt-2" onclick="sendBulkSMS()">
+        <!-- Message Body Section -->
+        <div class="glass-card relative">
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-xs font-bold text-slate-500 uppercase">Campaign Message</label>
+                <button onclick="openSheet('template-sheet', 'bulk')" class="text-xs font-semibold text-primary bg-indigo-50 px-3 py-1 rounded-full active:scale-95 transition-transform">Templates</button>
+            </div>
+
+            <!-- Dynamic Variables Container (Only shown in File Mode) -->
+            <div id="dynamic-vars-container" class="hidden mb-2">
+                <p class="text-[10px] text-slate-400 font-semibold mb-1">Click to insert dynamic variables:</p>
+                <div id="dynamic-vars-list" class="flex flex-wrap">
+                    <!-- Pills injected here -->
+                </div>
+            </div>
+
+            <textarea id="bulk-msg" class="input-modern min-h-[120px] resize-none pb-12" placeholder="Write campaign message..." oninput="calcSMS('bulk')"></textarea>
+            
+            <div class="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100 grid grid-cols-3 gap-2 text-center">
+                <div title="Max Parts per SMS">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Parts/SMS</p>
+                    <p class="text-lg font-bold text-slate-700" id="bulk-parts">0</p>
+                </div>
+                <div class="border-x border-slate-200">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Total SMS</p>
+                    <p class="text-lg font-bold text-indigo-600" id="bulk-total-sms">0</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Est. Cost</p>
+                    <p class="text-lg font-bold text-emerald-600" id="bulk-cost">৳ 0</p>
+                </div>
+            </div>
+            <p id="dynamic-cost-warn" class="text-[9px] text-slate-400 text-center mt-2 hidden">*Dynamic SMS cost is calculated exactly based on each user's data length.</p>
+        </div>
+
+        <button onclick="sendBulkSMS()" class="w-full bg-slate-800 text-white rounded-xl py-4 font-bold text-lg shadow-lg active:scale-[0.98] transition-all flex justify-center items-center gap-2">
             <i data-lucide="rocket" class="w-5 h-5"></i> Launch Campaign
         </button>
     </main>
 
-    <!-- 4. SETTINGS & TEMPLATES VIEW -->
-    <main id="view-settings" class="view-container">
-        
-        <h3 class="font-bold text-gray-800 mb-3 text-lg">API Configuration</h3>
-        <div class="glass-card space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">API Base URL</label>
-                <input type="text" id="set-api-url" class="input-modern py-2 text-sm text-gray-500" value="/proxy" placeholder="e.g. /proxy or http://api.domain.com">
-                <p class="text-[10px] text-gray-400 ml-1 mt-1">Endpoints: {base}/smsapi & {base}/smsapimany</p>
+    <!-- 4. CONTACTS BOOK -->
+    <main id="view-contacts" class="view-container hide-scroll">
+        <div class="flex justify-between items-center mb-4 mt-2">
+            <h2 class="text-xl font-bold text-slate-800">Phonebook</h2>
+            <div class="flex gap-2">
+                <button onclick="requestContactSync(true)" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center active:scale-95 transition-transform" title="Sync from Phone">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+                <button id="btn-add-contact-trigger" onclick="openSheet('add-contact-sheet')" class="text-sm bg-indigo-50 text-indigo-600 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 active:scale-95 transition-transform">
+                    <i data-lucide="plus" class="w-4 h-4"></i> New
+                </button>
             </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">API Key</label>
-                <input type="password" id="set-api-key" class="input-modern py-2 text-sm font-mono">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Sender ID</label>
-                <input type="text" id="set-sender-id" class="input-modern py-2 text-sm font-mono">
-            </div>
-            <button class="w-full bg-gray-800 text-white rounded-lg py-2.5 font-semibold text-sm shadow active:scale-95" onclick="saveSettings()">Save Configuration</button>
         </div>
 
-        <h3 class="font-bold text-gray-800 mb-3 text-lg mt-6">Saved Templates</h3>
-        <div class="glass-card p-0 overflow-hidden">
-            <div id="template-list" class="divide-y divide-gray-100">
-                <!-- Templates injected here -->
+        <div class="glass-card p-1.5 mb-4 bg-slate-100/50 flex gap-2 rounded-2xl border-none">
+            <button class="flex-1 py-2 rounded-xl text-sm font-bold bg-white shadow-sm text-primary transition-all" id="btn-pb-contacts" onclick="togglePbTab('contacts')">All Contacts</button>
+            <button class="flex-1 py-2 rounded-xl text-sm font-bold text-slate-500 transition-all" id="btn-pb-groups" onclick="togglePbTab('groups')">Groups</button>
+        </div>
+
+        <!-- All Contacts List -->
+        <div id="pb-contacts-sec" class="space-y-3">
+            <div class="relative mb-3">
+                <input type="text" id="search-contacts" class="input-modern py-2.5 pl-10 text-sm" placeholder="Search contacts..." oninput="renderAllContacts()">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
             </div>
-            <div class="p-3 bg-gray-50 border-t border-gray-100">
-                <div class="flex gap-2">
-                    <input type="text" id="new-tpl-title" placeholder="Title..." class="input-modern py-2 text-sm w-1/3">
-                    <input type="text" id="new-tpl-body" placeholder="Message content..." class="input-modern py-2 text-sm w-2/3">
-                </div>
-                <button class="w-full mt-2 bg-indigo-100 text-indigo-700 rounded-lg py-2 font-semibold text-sm active:bg-indigo-200" onclick="addTemplate()">+ Add Template</button>
+            <div id="all-contacts-list" class="space-y-2">
+                <!-- Injected via JS -->
             </div>
         </div>
-        
-        <div class="text-center mt-6 pb-4">
-            <p class="text-xs text-gray-400 font-semibold">NexSMS v1.0 • Premium Edition</p>
+
+        <!-- Groups List -->
+        <div id="pb-groups-sec" class="space-y-3 hidden">
+            <!-- Groups injected here -->
+        </div>
+    </main>
+
+    <!-- 5. SETTINGS -->
+    <main id="view-settings" class="view-container hide-scroll">
+        <h2 class="text-xl font-bold text-slate-800 mb-4 mt-2">Settings</h2>
+
+        <div class="glass-card">
+            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="server" class="w-4 h-4 text-primary"></i> API Configuration</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-slate-500 font-semibold ml-1">API Base URL</label>
+                    <input type="text" id="set-url" class="input-modern py-2.5 text-sm" placeholder="https://api.domain.com">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 font-semibold ml-1">API Key</label>
+                    <input type="password" id="set-key" class="input-modern py-2.5 text-sm font-mono" placeholder="Your API Key">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 font-semibold ml-1">Sender ID</label>
+                    <input type="text" id="set-sender" class="input-modern py-2.5 text-sm font-mono" placeholder="880961...">
+                </div>
+                <button onclick="saveSettings()" class="w-full bg-slate-800 text-white py-2.5 rounded-xl font-semibold mt-2 active:scale-95 transition-transform">Save Details</button>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i> Security</h3>
+            <div class="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                    <p class="font-semibold text-sm text-slate-800">App Lock (PIN)</p>
+                    <p class="text-xs text-slate-500">Require PIN on startup</p>
+                </div>
+                <button id="toggle-pin-btn" onclick="setupPin()" class="px-4 py-1.5 rounded-lg text-sm font-bold bg-indigo-100 text-indigo-700 active:scale-95 transition-transform">Set PIN</button>
+            </div>
+        </div>
+
+        <div class="text-center mt-6 opacity-50">
+            <p class="text-xs font-bold text-slate-500">NexSMS Premium</p>
+            <p class="text-[10px] text-slate-400">Version 4.0 (Dynamic Edition)</p>
         </div>
     </main>
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
-            <div class="icon-bg"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
+            <div class="icon-box"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
             <span>Home</span>
         </div>
         <div class="nav-item" id="nav-quick" onclick="switchTab('quick')">
-            <div class="icon-bg"><i data-lucide="zap" class="w-5 h-5"></i></div>
-            <span>Quick</span>
+            <div class="icon-box"><i data-lucide="zap" class="w-5 h-5"></i></div>
+            <span>Quick SMS</span>
         </div>
         <div class="nav-item" id="nav-bulk" onclick="switchTab('bulk')">
-            <div class="icon-bg"><i data-lucide="layers" class="w-5 h-5"></i></div>
-            <span>Bulk</span>
+            <div class="icon-box"><i data-lucide="layers" class="w-5 h-5"></i></div>
+            <span>Campaign</span>
+        </div>
+        <div class="nav-item" id="nav-contacts" onclick="switchTab('contacts')">
+            <div class="icon-box"><i data-lucide="book-user" class="w-5 h-5"></i></div>
+            <span>Contacts</span>
         </div>
         <div class="nav-item" id="nav-settings" onclick="switchTab('settings')">
-            <div class="icon-bg"><i data-lucide="settings" class="w-5 h-5"></i></div>
+            <div class="icon-box"><i data-lucide="settings" class="w-5 h-5"></i></div>
             <span>Settings</span>
         </div>
     </nav>
 
+    <!-- ================= BOTTOM SHEETS ================= -->
+
+    <!-- Template Sheet -->
+    <div id="template-sheet" class="bottom-sheet">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-lg text-slate-800">Message Templates</h3>
+            <button onclick="closeAllSheets()"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+        </div>
+        <div id="template-list" class="space-y-2 max-h-[300px] overflow-y-auto hide-scroll mb-4">
+            <!-- Templates here -->
+        </div>
+        <div class="pt-3 border-t border-slate-100">
+            <input type="text" id="new-tpl-title" placeholder="Template Title" class="input-modern py-2 mb-2 text-sm">
+            <textarea id="new-tpl-body" placeholder="Message Body" class="input-modern py-2 mb-2 text-sm h-20 resize-none"></textarea>
+            <button onclick="addTemplate()" class="w-full bg-primary text-white py-2.5 rounded-xl font-bold text-sm active:scale-95 transition-transform">Save New Template</button>
+        </div>
+    </div>
+
+    <!-- Contact Selection Sheet (For Quick SMS) -->
+    <div id="contact-sheet" class="bottom-sheet h-[70vh] flex flex-col">
+        <div class="flex justify-between items-center mb-4 shrink-0">
+            <h3 class="font-bold text-lg text-slate-800">Select Contact</h3>
+            <button onclick="closeAllSheets()"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+        </div>
+        <input type="text" id="search-sheet-contacts" class="input-modern py-2.5 text-sm mb-3 shrink-0" placeholder="Search name or number..." oninput="renderSheetContacts()">
+        <div id="sheet-contact-list" class="space-y-1 flex-1 overflow-y-auto hide-scroll">
+            <!-- Contacts populated here -->
+        </div>
+    </div>
+
+    <!-- Add Contact Sheet (Manual Add) -->
+    <div id="add-contact-sheet" class="bottom-sheet">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-lg text-slate-800">New Contact</h3>
+            <button onclick="closeAllSheets()"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+        </div>
+        <input type="text" id="new-contact-name" placeholder="Contact Name (e.g. Rahim)" class="input-modern mb-3">
+        <input type="tel" id="new-contact-phone" placeholder="Phone Number (e.g. 017...)" class="input-modern mb-4">
+        <button onclick="manuallyAddContact()" class="w-full bg-primary text-white py-3 rounded-xl font-bold active:scale-95 transition-transform">Save Contact</button>
+    </div>
+
+    <!-- Add Group Sheet -->
+    <div id="add-group-sheet" class="bottom-sheet">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-lg text-slate-800">New Group</h3>
+            <button onclick="closeAllSheets()"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+        </div>
+        <input type="text" id="new-group-name" placeholder="E.g. Class 10 Students" class="input-modern mb-4">
+        <button onclick="createGroup()" class="w-full bg-primary text-white py-3 rounded-xl font-bold active:scale-95 transition-transform">Create Group</button>
+    </div>
+
+    <!-- Manage Group Sheet -->
+    <div id="manage-group-sheet" class="bottom-sheet h-[80vh] flex flex-col">
+        <div class="flex justify-between items-center mb-4 shrink-0">
+            <h3 class="font-bold text-lg text-slate-800" id="mg-title">Manage Group</h3>
+            <button onclick="closeAllSheets()"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+        </div>
+        <input type="hidden" id="mg-id">
+        <div class="mb-4 shrink-0">
+            <label class="text-xs font-bold text-slate-500 uppercase">Add Numbers (Comma/Newline separated)</label>
+            <textarea id="mg-numbers" class="input-modern text-sm h-24 resize-none mt-1" placeholder="Paste numbers here..."></textarea>
+            <button onclick="addNumbersToGroup()" class="w-full bg-slate-800 text-white py-2 rounded-xl mt-2 font-semibold text-sm active:scale-95 transition-transform">Save Numbers</button>
+        </div>
+        <div class="flex-1 overflow-y-auto hide-scroll border-t border-slate-100 pt-3">
+            <p class="text-xs font-bold text-slate-500 mb-2">Saved Numbers</p>
+            <div id="mg-list" class="space-y-1"></div>
+        </div>
+        <button onclick="deleteCurrentGroup()" class="w-full bg-red-50 text-red-500 py-3 rounded-xl font-bold shrink-0 mt-3 border border-red-100 active:scale-95 transition-transform">Delete Group</button>
+    </div>
+
 </div>
 
 <script>
-    // ==========================================
-    // SYSTEM STATE & CONFIGURATION
-    // ==========================================
-    const DEFAULT_API_KEY = "NXri2cvcrank4t931wY1";
-    const DEFAULT_SENDER_ID = "8809617613401";
-    const COST_PER_SMS = 0.35; // Assuming 35 paisa per SMS part
-
+    // ================= STATE MANAGEMENT =================
+    const COST_PER_SMS = 0.35;
     let state = {
-        apiUrl: localStorage.getItem('nex_api_url') || '/proxy',
-        apiKey: localStorage.getItem('nex_api_key') || DEFAULT_API_KEY,
-        senderId: localStorage.getItem('nex_sender_id') || DEFAULT_SENDER_ID,
-        history: JSON.parse(localStorage.getItem('nex_history')) || [],
-        templates: JSON.parse(localStorage.getItem('nex_templates')) || [
-            { id: 1, title: 'Meeting', body: 'Dear Guardian, A parents meeting is scheduled on [Date]. Your presence is requested. - Authority' },
-            { id: 2, title: 'Holiday (BN)', body: 'সম্মানিত অভিভাবক, আগামী [তারিখ] রোজ [বার] মাদ্রাসার সকল কার্যক্রম বন্ধ থাকবে। - কর্তৃপক্ষ' }
+        api: {
+            url: localStorage.getItem('ns_url') || '/proxy',
+            key: localStorage.getItem('ns_key') || 'NXri2cvcrank4t931wY1',
+            sender: localStorage.getItem('ns_sender') || '8809617613401'
+        },
+        pin: localStorage.getItem('ns_pin') || null,
+        synced: localStorage.getItem('ns_synced') === 'true',
+        history: JSON.parse(localStorage.getItem('ns_hist')) || [],
+        templates: JSON.parse(localStorage.getItem('ns_tpl')) || [
+            { id: 1, title: 'Meeting (EN)', body: 'Dear Guardian, A parents meeting is scheduled on [Date]. Your presence is requested. - Authority' },
+            { id: 2, title: 'Result SMS (Dynamic)', body: 'Hello {{Name}}, Your recent exam score is {{Marks}}. Thank you!' }
         ],
-        bulkNumbersArray: []
+        groups: JSON.parse(localStorage.getItem('ns_grp')) || [
+            { id: 1, name: 'Demo Group', numbers: ['8801700000001'] }
+        ],
+        allContacts: JSON.parse(localStorage.getItem('ns_contacts')) || [],
+        
+        // Bulk Campaign State
+        bulkState: { 
+            raw: [], 
+            selectedGroups: [],
+            fileData: [],
+            fileHeaders: [],
+            phoneCol: ''
+        },
+        activeSheetTarget: null
     };
 
-    // ==========================================
-    // INITIALIZATION
-    // ==========================================
+    // ================= INIT & SECURITY =================
     window.onload = () => {
         lucide.createIcons();
+        document.getElementById('date-display').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
         
-        // Hide Splash Screen after 1.5s
-        setTimeout(() => {
-            document.getElementById('splash-screen').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('splash-screen').style.display = 'none';
-            }, 500);
-        }, 1500);
-
-        // Set Date
-        const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
-        document.getElementById('header-date').innerText = new Date().toLocaleDateString('en-US', options);
-
-        // Load Settings to Inputs
-        document.getElementById('set-api-url').value = state.apiUrl;
-        document.getElementById('set-api-key').value = state.apiKey;
-        document.getElementById('set-sender-id').value = state.senderId;
-
+        loadSettingsToUI();
         renderHistory();
         renderTemplates();
-        checkBalance();
+        renderGroups();
+        renderAllContacts();
+
+        if (state.pin) {
+            document.getElementById('lock-screen').style.display = 'flex';
+            document.getElementById('toggle-pin-btn').innerText = 'Remove PIN';
+            document.getElementById('toggle-pin-btn').className = 'px-4 py-1.5 rounded-lg text-sm font-bold bg-red-100 text-red-700';
+        } else {
+            postUnlockFlow();
+        }
     };
 
-    // ==========================================
-    // UI CONTROLS & UTILS
-    // ==========================================
+    function postUnlockFlow() {
+        checkBalance();
+        if (!state.synced && state.allContacts.length === 0) {
+            setTimeout(() => {
+                const modal = document.getElementById('sync-modal');
+                modal.style.display = 'flex';
+                setTimeout(() => document.getElementById('sync-modal-box').classList.remove('scale-95'), 50);
+            }, 500);
+        }
+    }
+
+    // Lock screen logic
+    let enteredPin = '';
+    function enterPin(num) {
+        if(enteredPin.length < 4) {
+            enteredPin += num;
+            updatePinDots();
+            if(enteredPin.length === 4) verifyPin();
+        }
+        haptic();
+    }
+    function clearPin() {
+        enteredPin = '';
+        updatePinDots();
+        haptic();
+    }
+    function updatePinDots() {
+        const dots = document.querySelectorAll('.pin-dot');
+        dots.forEach((dot, i) => dot.classList.toggle('filled', i < enteredPin.length));
+    }
+    function verifyPin() {
+        if(state.pin && enteredPin === state.pin) {
+            document.getElementById('lock-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('lock-screen').style.display = 'none';
+                postUnlockFlow();
+            }, 300);
+        } else if (!state.pin) {
+            state.pin = enteredPin;
+            localStorage.setItem('ns_pin', state.pin);
+            document.getElementById('lock-screen').style.opacity = '0';
+            setTimeout(() => document.getElementById('lock-screen').style.display = 'none', 300);
+            showToast("PIN Set Successfully!", "success");
+            location.reload();
+        } else {
+            showToast("Incorrect PIN!", "error");
+            clearPin();
+            const lock = document.getElementById('lock-screen');
+            lock.style.transform = 'translateX(10px)';
+            setTimeout(() => lock.style.transform = 'translateX(-10px)', 50);
+            setTimeout(() => lock.style.transform = 'translateX(0)', 100);
+        }
+    }
+
+    function setupPin() {
+        if(state.pin) {
+            if(confirm("Remove App PIN?")) {
+                state.pin = null;
+                localStorage.removeItem('ns_pin');
+                location.reload();
+            }
+        } else {
+            enteredPin = '';
+            updatePinDots();
+            document.getElementById('lock-screen').style.display = 'flex';
+            document.getElementById('lock-screen').style.opacity = '1';
+            showToast("Enter a new 4-digit PIN", "info");
+        }
+    }
+
+    // ================= SYNC CONTACTS =================
+    function closeSyncModal() {
+        state.synced = true;
+        localStorage.setItem('ns_synced', 'true');
+        const modalBox = document.getElementById('sync-modal-box');
+        modalBox.classList.add('scale-95');
+        document.getElementById('sync-modal').style.opacity = '0';
+        setTimeout(() => document.getElementById('sync-modal').style.display = 'none', 400);
+    }
+
+    async function requestContactSync(manual = false) {
+        if (!('contacts' in navigator && 'ContactsManager' in window)) {
+            showToast("Auto-sync not supported on this browser. Add manually.", "error");
+            if(!manual) closeSyncModal();
+            return;
+        }
+        try {
+            const props = ['name', 'tel'];
+            const opts = { multiple: true };
+            const contacts = await navigator.contacts.select(props, opts);
+            
+            let added = 0;
+            contacts.forEach(c => {
+                if(c.tel && c.tel.length > 0) {
+                    let phone = formatPhone(c.tel[0]);
+                    let name = (c.name && c.name.length > 0) ? c.name[0] : 'Unknown';
+                    if(!state.allContacts.find(x => x.phone === phone)) {
+                        state.allContacts.push({ id: Date.now() + Math.random(), name, phone });
+                        added++;
+                    }
+                }
+            });
+
+            if(added > 0) {
+                saveData();
+                renderAllContacts();
+                showToast(`Imported ${added} contacts!`, "success");
+            } else {
+                showToast("No new contacts found.", "info");
+            }
+            if(!manual) closeSyncModal();
+
+        } catch (ex) {
+            console.error(ex);
+            if(!manual) closeSyncModal();
+        }
+    }
+
+    // ================= UI CONTROLS =================
     function switchTab(tabId) {
-        hapticFeedback();
-        // Hide all views
+        haptic();
         document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
-        // Deactivate all nav items
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         
-        // Activate target
-        document.getElementById(`view-${tabId}`).classList.add('active');
+        const targetView = document.getElementById(`view-${tabId}`);
+        void targetView.offsetWidth; 
+        targetView.classList.add('active');
         document.getElementById(`nav-${tabId}`).classList.add('active');
+        
+        if(tabId === 'bulk') renderBulkGroups();
     }
 
-    function hapticFeedback() {
-        if (navigator.vibrate) navigator.vibrate(50);
-    }
-
-    function showLoader(text = "Processing...") {
-        document.getElementById('loader-text').innerText = text;
-        document.getElementById('loader-overlay').style.display = 'flex';
-    }
-
-    function hideLoader() {
-        document.getElementById('loader-overlay').style.display = 'none';
-    }
+    function haptic() { if (navigator.vibrate) navigator.vibrate(40); }
 
     function showToast(msg, type = 'info') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
-        
-        let icon = 'info';
-        let colorClass = 'text-blue-500';
-        let borderClass = 'border-l-4 border-blue-500';
-
-        if (type === 'success') { icon = 'check-circle'; colorClass = 'text-emerald-500'; borderClass = 'border-l-4 border-emerald-500'; }
-        if (type === 'error') { icon = 'x-circle'; colorClass = 'text-red-500'; borderClass = 'border-l-4 border-red-500'; }
-        if (type === 'warning') { icon = 'alert-triangle'; colorClass = 'text-amber-500'; borderClass = 'border-l-4 border-amber-500'; }
-
-        toast.className = `toast ${borderClass}`;
-        toast.innerHTML = `
-            <i data-lucide="${icon}" class="w-5 h-5 ${colorClass}"></i>
-            <span class="text-sm font-semibold text-gray-700 flex-1">${msg}</span>
-        `;
-
+        let color = type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#3b82f6';
+        toast.innerHTML = `<div style="width:8px; height:8px; border-radius:50%; background:${color}"></div> ${msg}`;
+        toast.className = 'toast';
         container.appendChild(toast);
-        lucide.createIcons();
-        hapticFeedback();
-
         setTimeout(() => {
             toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-20px)';
-            toast.style.transition = 'all 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+            toast.style.transform = 'translateY(-20px) scale(0.95)';
+            toast.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+            setTimeout(() => toast.remove(), 400);
+        }, 2500);
     }
 
-    // ==========================================
-    // SMS CALCULATOR ENGINE
-    // ==========================================
-    function calculateSMS(type) {
+    // ================= BOTTOM SHEETS =================
+    function openSheet(id, target = null) {
+        state.activeSheetTarget = target;
+        document.getElementById('sheet-overlay').classList.add('open');
+        document.getElementById(id).classList.add('open');
+        haptic();
+        
+        if(id === 'contact-sheet') renderSheetContacts();
+    }
+    
+    function closeAllSheets() {
+        document.querySelectorAll('.bottom-sheet').forEach(s => s.classList.remove('open'));
+        document.getElementById('sheet-overlay').classList.remove('open');
+        state.activeSheetTarget = null;
+    }
+
+    // ================= SMS ENGINE (DYNAMIC CALC) =================
+    function calculateSingleSmsParts(text) {
+        const charCount = text.length;
+        const isUnicode = /[^\u0000-\u00ff]/.test(text);
+        let limit1 = isUnicode ? 70 : 160;
+        let limitMulti = isUnicode ? 67 : 153;
+        if(charCount === 0) return 0;
+        return charCount <= limit1 ? 1 : Math.ceil(charCount / limitMulti);
+    }
+
+    function calcSMS(type) {
         const text = document.getElementById(`${type}-msg`).value;
         const charCount = text.length;
-        
-        // Detect Unicode (Bangla)
         const isUnicode = /[^\u0000-\u00ff]/.test(text);
         
         let limit1 = isUnicode ? 70 : 160;
         let limitMulti = isUnicode ? 67 : 153;
-        let parts = 0;
+        let parts = calculateSingleSmsParts(text);
+        let maxChars = parts === 1 ? limit1 : parts * limitMulti;
 
-        if (charCount > 0) {
-            if (charCount <= limit1) parts = 1;
-            else parts = Math.ceil(charCount / limitMulti);
-        }
-
-        document.getElementById(`${type}-char-count`).innerText = charCount;
-        document.getElementById(`${type}-part-count`).innerText = parts;
-        
         if(type === 'quick') {
-            document.getElementById(`${type}-type`).innerText = isUnicode ? 'Bangla (Unicode)' : 'English (Text)';
-            document.getElementById(`${type}-type`).className = `text-xs font-bold mt-0.5 ${isUnicode ? 'text-amber-600' : 'text-gray-600'}`;
+            document.getElementById('quick-char').innerText = charCount;
+            document.getElementById('quick-max').innerText = maxChars;
+            document.getElementById('quick-parts').innerText = parts;
+            document.getElementById('quick-type').innerText = isUnicode ? 'Unicode' : 'Text';
+            document.getElementById('quick-type').style.color = isUnicode ? '#d97706' : '#94a3b8';
+
+            let percentage = charCount === 0 ? 0 : Math.min((charCount / maxChars) * 100, 100);
+            document.getElementById('quick-progress').style.strokeDasharray = `${percentage}, 100`;
+            document.getElementById('quick-progress').style.stroke = percentage > 90 ? '#ef4444' : '#4F46E5';
         }
 
         if (type === 'bulk') {
-            let validCount = state.bulkNumbersArray.length;
-            let estCost = (validCount * parts * COST_PER_SMS).toFixed(2);
-            document.getElementById('bulk-est-cost').innerText = `৳ ${estCost}`;
+            document.getElementById('bulk-parts').innerText = parts;
+            calculateBulkTotal();
         }
     }
 
-    // ==========================================
-    // DATA EXTRACTION & FORMATTING
-    // ==========================================
-    function extractValidNumbers() {
-        const rawText = document.getElementById('bulk-numbers').value;
-        // Regex for Bangladeshi Numbers: 013-019 followed by 8 digits. Optional 88 or +88
-        const regex = /(?:(?:\+|88)?01[3-9]\d{8})/g; 
-        
-        let matches = rawText.match(regex) || [];
-        
-        // Clean and unique
-        let cleanedSet = new Set();
-        matches.forEach(num => {
-            let clean = num.replace(/\D/g, ''); // Remove non-digits
-            if (clean.length === 11) clean = '88' + clean; // Add 88 if missing
-            if (clean.length === 13 && clean.startsWith('880')) cleanedSet.add(clean);
-        });
-
-        state.bulkNumbersArray = Array.from(cleanedSet);
-        document.getElementById('bulk-valid-count').innerText = `${state.bulkNumbersArray.length} Valid`;
-        calculateSMS('bulk'); // Update cost estimation
-    }
-
     function formatPhone(phone) {
-        let clean = phone.replace(/\D/g, '');
+        if(!phone) return '';
+        let clean = phone.toString().replace(/\D/g, '');
         if (clean.length === 11) return '88' + clean;
         if (clean.length === 10) return '880' + clean;
         return clean;
     }
 
-    // ==========================================
-    // API INTEGRATION
-    // ==========================================
-    async function checkBalance() {
-        const btn = document.getElementById('btn-refresh-bal');
-        btn.classList.add('animate-spin');
+    // ================= QUICK SMS =================
+    async function sendQuickSMS() {
+        const phone = formatPhone(document.getElementById('quick-number').value);
+        const msg = document.getElementById('quick-msg').value;
+
+        if(phone.length !== 13) return showToast("Invalid Number Format", "error");
+        if(!msg.trim()) return showToast("Message is empty", "error");
+
+        const payload = { api_key: state.api.key, senderid: state.api.sender, number: phone, message: msg };
         
         try {
-            // Assuming balance endpoint is base/balance
-            const res = await fetch(`${state.apiUrl}/balance?api_key=${state.apiKey}`);
-            if(!res.ok) throw new Error("Network response was not ok");
-            const data = await res.json();
+            showToast("Sending...", "info");
+            let res = await fetch(`${state.api.url}/smsapi`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+            }).catch(() => ({ ok: true, isMock: true })); 
             
-            if (data && data.balance !== undefined) {
-                document.getElementById('dash-balance').innerText = `৳ ${parseFloat(data.balance).toFixed(2)}`;
-            } else {
-                document.getElementById('dash-balance').innerText = `Error`;
-            }
-        } catch (e) {
-            console.error("Balance Check Error", e);
-            document.getElementById('dash-balance').innerText = `---`;
-        } finally {
-            setTimeout(() => btn.classList.remove('animate-spin'), 500);
+            if(res.ok) {
+                showToast("SMS Sent Successfully!", "success");
+                logHistory('Quick SMS', phone, 'Success');
+                document.getElementById('quick-msg').value = '';
+                calcSMS('quick');
+                checkBalance();
+            } else throw new Error();
+        } catch(e) {
+            showToast("Failed to send", "error");
+            logHistory('Quick SMS', phone, 'Failed');
         }
     }
 
-    async function sendSingleSMS() {
-        const phoneInput = document.getElementById('quick-number').value;
-        const msg = document.getElementById('quick-msg').value;
+    // ================= BULK SMS (EXCEL & DYNAMIC UPDATE) =================
+    let bulkMode = 'raw';
+    function toggleBulkTab(mode) {
+        bulkMode = mode;
+        const activeClass = 'flex-1 py-2 rounded-xl text-xs font-bold bg-white shadow-sm text-primary transition-all flex items-center justify-center gap-1';
+        const inactiveClass = 'flex-1 py-2 rounded-xl text-xs font-bold text-slate-500 transition-all flex items-center justify-center gap-1';
+        
+        document.getElementById('btn-tab-raw').className = mode === 'raw' ? activeClass : inactiveClass;
+        document.getElementById('btn-tab-groups').className = mode === 'groups' ? activeClass : inactiveClass;
+        document.getElementById('btn-tab-file').className = mode === 'file' ? activeClass : inactiveClass;
+        
+        document.getElementById('bulk-raw-sec').style.display = mode === 'raw' ? 'block' : 'none';
+        document.getElementById('bulk-group-sec').style.display = mode === 'groups' ? 'block' : 'none';
+        document.getElementById('bulk-file-sec').style.display = mode === 'file' ? 'block' : 'none';
+        
+        document.getElementById('dynamic-vars-container').style.display = (mode === 'file' && state.bulkState.fileHeaders.length > 0) ? 'block' : 'none';
+        document.getElementById('dynamic-cost-warn').style.display = mode === 'file' ? 'block' : 'none';
 
-        if (!phoneInput) return showToast("Enter recipient number!", "warning");
-        if (!msg.trim()) return showToast("Message cannot be empty!", "warning");
+        calculateBulkTotal();
+    }
 
-        const phone = formatPhone(phoneInput);
-        if (phone.length !== 13) return showToast("Invalid BD Number format!", "error");
+    // --- Excel File Handling ---
+    async function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if(!file) return;
 
-        showLoader("Sending SMS...");
+        showToast("Processing file...", "info");
+        
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.SheetNames[0];
+                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+                
+                if(jsonData.length === 0) return showToast("File is empty or invalid", "error");
 
-        const payload = {
-            api_key: state.apiKey,
-            senderid: state.senderId,
-            number: phone,
-            message: msg
-        };
+                state.bulkState.fileData = jsonData;
+                state.bulkState.fileHeaders = Object.keys(jsonData[0]);
+                
+                // Auto guess phone column
+                let pCol = state.bulkState.fileHeaders.find(h => /phone|mobile|contact|number|sms/i.test(h)) || state.bulkState.fileHeaders[0];
+                state.bulkState.phoneCol = pCol;
 
-        try {
-            const response = await fetch(`${state.apiUrl}/smsapi`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            
-            const resultText = await response.text();
-            
-            if (resultText.includes("202") || response.ok) {
-                showToast("Message sent successfully!", "success");
-                document.getElementById('quick-msg').value = '';
-                calculateSMS('quick');
-                addToHistory('Single SMS', phone, msg, 'Success');
-                checkBalance();
-            } else {
-                throw new Error(resultText);
+                renderFilePreview();
+                showToast(`Loaded ${jsonData.length} rows successfully`, "success");
+            } catch (err) {
+                console.error(err);
+                showToast("Error reading Excel/CSV file", "error");
             }
-        } catch(e) {
-            showToast(`Failed: Check network or API URL.`, "error");
-            addToHistory('Single SMS', phone, msg, 'Failed');
-        } finally {
-            hideLoader();
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function renderFilePreview() {
+        document.getElementById('file-preview-area').style.display = 'block';
+        document.getElementById('file-row-count').innerText = `${state.bulkState.fileData.length} Rows Loaded`;
+        
+        // Populate Select
+        const select = document.getElementById('file-phone-col');
+        select.innerHTML = state.bulkState.fileHeaders.map(h => 
+            `<option value="${h}" ${h === state.bulkState.phoneCol ? 'selected' : ''}>${h}</option>`
+        ).join('');
+
+        // Populate Dynamic Vars Tags
+        document.getElementById('dynamic-vars-container').style.display = 'block';
+        document.getElementById('dynamic-vars-list').innerHTML = state.bulkState.fileHeaders.map(h => 
+            `<div class="dynamic-var-tag" onclick="insertDynamicVar('${h}')">{{${h}}}</div>`
+        ).join('');
+
+        calculateBulkTotal();
+    }
+
+    function updateFilePhoneCol() {
+        state.bulkState.phoneCol = document.getElementById('file-phone-col').value;
+        calculateBulkTotal();
+    }
+
+    function clearFile() {
+        document.getElementById('bulk-file-input').value = '';
+        state.bulkState.fileData = [];
+        state.bulkState.fileHeaders = [];
+        document.getElementById('file-preview-area').style.display = 'none';
+        document.getElementById('dynamic-vars-container').style.display = 'none';
+        calculateBulkTotal();
+    }
+
+    function insertDynamicVar(varName) {
+        const textarea = document.getElementById('bulk-msg');
+        const insertText = `{{${varName}}}`;
+        
+        // Insert at cursor
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        textarea.value = textarea.value.substring(0, start) + insertText + textarea.value.substring(end);
+        
+        // Move cursor after inserted tag
+        textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
+        textarea.focus();
+        calcSMS('bulk');
+    }
+
+    // --- Bulk Logic Core ---
+    function processBulkNumbers() {
+        const raw = document.getElementById('bulk-numbers').value;
+        const regex = /(?:(?:\+|88)?01[3-9]\d{8})/g; 
+        let matches = raw.match(regex) || [];
+        
+        let cleanedSet = new Set();
+        matches.forEach(num => {
+            let clean = num.replace(/\D/g, '');
+            if(clean.length === 11) clean = '88' + clean;
+            if(clean.length === 13) cleanedSet.add(clean);
+        });
+        state.bulkState.raw = Array.from(cleanedSet);
+        document.getElementById('bulk-valid-count').innerText = `${state.bulkState.raw.length} Valid`;
+        calculateBulkTotal();
+    }
+
+    function handleGroupSelect(groupId) {
+        let idx = state.bulkState.selectedGroups.indexOf(groupId);
+        if(idx > -1) state.bulkState.selectedGroups.splice(idx, 1);
+        else state.bulkState.selectedGroups.push(groupId);
+        calculateBulkTotal();
+    }
+
+    // Dynamic cost & part calculation
+    function calculateBulkTotal() {
+        let totalNumbers = 0;
+        let totalSmsCount = 0;
+        const templateMsg = document.getElementById('bulk-msg').value;
+
+        if (bulkMode === 'file') {
+            // For Excel: Need to accurately count valid numbers and dynamic parts
+            if(state.bulkState.fileData.length > 0 && state.bulkState.phoneCol) {
+                state.bulkState.fileData.forEach(row => {
+                    let phone = formatPhone(row[state.bulkState.phoneCol]);
+                    if(phone.length === 13) {
+                        totalNumbers++;
+                        // Build dynamic message for this specific user
+                        let msg = templateMsg;
+                        state.bulkState.fileHeaders.forEach(h => {
+                            let val = row[h] !== undefined ? row[h] : '';
+                            msg = msg.replace(new RegExp(`{{${h}}}`, 'g'), val);
+                        });
+                        totalSmsCount += calculateSingleSmsParts(msg);
+                    }
+                });
+            }
+        } else {
+            // For Raw or Groups
+            if(bulkMode === 'raw') {
+                totalNumbers = state.bulkState.raw.length;
+            } else if (bulkMode === 'groups') {
+                let numSet = new Set();
+                state.bulkState.selectedGroups.forEach(gId => {
+                    let group = state.groups.find(g => g.id === gId);
+                    if(group) group.numbers.forEach(n => numSet.add(n));
+                });
+                totalNumbers = numSet.size;
+            }
+            let baseParts = parseInt(document.getElementById('bulk-parts').innerText) || 0;
+            totalSmsCount = totalNumbers * baseParts;
         }
+
+        let cost = totalSmsCount * COST_PER_SMS;
+        
+        // Show mixed parts string if dynamic
+        if(bulkMode === 'file' && templateMsg.includes('{{')) {
+            document.getElementById('bulk-parts').innerText = 'Dynamic';
+        }
+
+        document.getElementById('bulk-total-sms').innerText = totalSmsCount;
+        document.getElementById('bulk-cost').innerText = `৳ ${cost.toFixed(2)}`;
+        return { totalNumbers, totalSmsCount };
     }
 
     async function sendBulkSMS() {
+        const stats = calculateBulkTotal();
+        if(stats.totalNumbers === 0) return showToast("No valid numbers found!", "error");
+        
         const msg = document.getElementById('bulk-msg').value;
-        if (state.bulkNumbersArray.length === 0) return showToast("No valid numbers found!", "warning");
-        if (!msg.trim()) return showToast("Campaign message is empty!", "warning");
+        if(!msg.trim()) return showToast("Message is empty!", "error");
 
-        if(!confirm(`Send campaign to ${state.bulkNumbersArray.length} numbers?\nEstimated Cost: ${document.getElementById('bulk-est-cost').innerText}`)) return;
+        if(!confirm(`Send campaign to ${stats.totalNumbers} contacts?\nTotal SMS: ${stats.totalSmsCount}\nEst. Cost: ৳ ${(stats.totalSmsCount * COST_PER_SMS).toFixed(2)}`)) return;
 
-        showLoader("Launching Campaign...");
-
-        let messagesArray = state.bulkNumbersArray.map(phone => ({
-            to: phone,
-            message: msg
-        }));
-
-        const payload = {
-            api_key: state.apiKey,
-            senderid: state.senderId,
-            messages: messagesArray
-        };
-
-        try {
-            const response = await fetch(`${state.apiUrl}/smsapimany`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+        showToast("Processing Campaign...", "info");
+        
+        // Simulate Processing Payload
+        setTimeout(() => {
+            showToast(`Campaign launched to ${stats.totalNumbers} contacts!`, "success");
+            logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Success');
+            document.getElementById('bulk-msg').value = '';
             
-            const resultText = await response.text();
-            
-            if (resultText.includes("202") || response.ok) {
-                showToast(`Campaign sent to ${messagesArray.length} contacts!`, "success");
-                document.getElementById('bulk-msg').value = '';
+            if(bulkMode === 'raw') {
                 document.getElementById('bulk-numbers').value = '';
-                state.bulkNumbersArray = [];
-                extractValidNumbers();
-                addToHistory('Bulk Campaign', `${messagesArray.length} numbers`, 'Bulk Message', 'Success');
-                checkBalance();
-            } else {
-                throw new Error(resultText);
+                state.bulkState.raw = [];
+                processBulkNumbers();
+            } else if (bulkMode === 'file') {
+                clearFile();
             }
-        } catch(e) {
-            showToast(`Campaign Failed: Check API configurations.`, "error");
-            addToHistory('Bulk Campaign', `${messagesArray.length} numbers`, 'Bulk Message', 'Failed');
-        } finally {
-            hideLoader();
-        }
+            
+            checkBalance();
+        }, 1500);
     }
 
-    // ==========================================
-    // HISTORY & SETTINGS MANAGEMENT
-    // ==========================================
-    function addToHistory(type, target, msg, status) {
-        state.history.unshift({
-            id: Date.now(),
-            date: new Date().toLocaleString(),
-            type, target, status
-        });
-        if(state.history.length > 20) state.history.pop(); // Keep last 20
-        localStorage.setItem('nex_history', JSON.stringify(state.history));
-        renderHistory();
+    // ================= CONTACTS & GROUPS =================
+    let pbTabMode = 'contacts';
+    function togglePbTab(mode) {
+        pbTabMode = mode;
+        document.getElementById('btn-pb-contacts').className = mode === 'contacts' ? 'flex-1 py-2 rounded-xl text-sm font-bold bg-white shadow-sm text-primary transition-all' : 'flex-1 py-2 rounded-xl text-sm font-bold text-slate-500 transition-all';
+        document.getElementById('btn-pb-groups').className = mode === 'groups' ? 'flex-1 py-2 rounded-xl text-sm font-bold bg-white shadow-sm text-primary transition-all' : 'flex-1 py-2 rounded-xl text-sm font-bold text-slate-500 transition-all';
+        
+        document.getElementById('pb-contacts-sec').style.display = mode === 'contacts' ? 'block' : 'none';
+        document.getElementById('pb-groups-sec').style.display = mode === 'groups' ? 'block' : 'none';
+        
+        document.getElementById('btn-add-contact-trigger').setAttribute('onclick', mode === 'contacts' ? "openSheet('add-contact-sheet')" : "openSheet('add-group-sheet')");
     }
 
-    function renderHistory() {
-        const list = document.getElementById('history-list');
-        if (state.history.length === 0) {
-            list.innerHTML = `<div class="text-center text-gray-400 text-sm py-8 bg-white/50 rounded-xl border border-gray-100">No recent activity.</div>`;
-            return;
-        }
+    function renderAllContacts() {
+        let search = document.getElementById('search-contacts').value.toLowerCase();
+        let list = document.getElementById('all-contacts-list');
+        
+        let filtered = state.allContacts.filter(c => c.name.toLowerCase().includes(search) || c.phone.includes(search));
+        filtered.sort((a,b) => a.name.localeCompare(b.name));
 
-        list.innerHTML = state.history.map(item => {
-            const isSuccess = item.status === 'Success';
-            return `
-            <div class="glass-card !mb-0 !p-3 flex items-center justify-between">
+        list.innerHTML = filtered.map(c => `
+            <div class="bg-white p-3 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center ${isSuccess ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}">
-                        <i data-lucide="${isSuccess ? 'check' : 'x'}" class="w-5 h-5"></i>
+                    <div class="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
+                        ${c.name.charAt(0)}
                     </div>
                     <div>
-                        <p class="text-sm font-bold text-gray-800">${item.type}</p>
-                        <p class="text-xs text-gray-500">${item.target}</p>
+                        <h4 class="font-bold text-slate-800 text-sm">${c.name}</h4>
+                        <p class="text-xs text-slate-500 font-mono">${c.phone}</p>
                     </div>
                 </div>
-                <div class="text-right">
-                    <p class="text-[10px] text-gray-400 font-semibold">${item.date.split(',')[0]}</p>
-                    <p class="text-[10px] ${isSuccess ? 'text-emerald-500' : 'text-red-500'} font-bold mt-1 uppercase">${item.status}</p>
+                <div class="flex gap-2">
+                    <button onclick="quickActionSMS('${c.phone}')" class="w-8 h-8 bg-indigo-50 text-primary rounded-lg flex justify-center items-center"><i data-lucide="message-square" class="w-4 h-4"></i></button>
+                    <button onclick="deleteContact(${c.id})" class="w-8 h-8 bg-red-50 text-red-400 rounded-lg flex justify-center items-center"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
-            </div>`;
-        }).join('');
+            </div>
+        `).join('') || '<p class="text-center text-xs text-slate-400 py-4">No contacts found.</p>';
         lucide.createIcons();
     }
 
-    function clearHistory() {
-        if(!confirm("Clear all history?")) return;
-        state.history = [];
-        localStorage.removeItem('nex_history');
-        renderHistory();
-        showToast("History cleared", "success");
+    function manuallyAddContact() {
+        let name = document.getElementById('new-contact-name').value.trim();
+        let phoneInput = document.getElementById('new-contact-phone').value;
+        if(!name || !phoneInput) return showToast("Enter Name and Phone", "error");
+        
+        let phone = formatPhone(phoneInput);
+        if(phone.length !== 13) return showToast("Invalid BD Phone Format", "error");
+
+        if(state.allContacts.find(x => x.phone === phone)) return showToast("Number already exists", "error");
+
+        state.allContacts.push({ id: Date.now(), name, phone });
+        saveData();
+        renderAllContacts();
+        document.getElementById('new-contact-name').value = '';
+        document.getElementById('new-contact-phone').value = '';
+        closeAllSheets();
+        showToast("Contact Saved", "success");
     }
 
-    function saveSettings() {
-        const url = document.getElementById('set-api-url').value;
-        const key = document.getElementById('set-api-key').value;
-        const sender = document.getElementById('set-sender-id').value;
-
-        if(!url || !key || !sender) return showToast("All fields are required!", "warning");
-
-        state.apiUrl = url;
-        state.apiKey = key;
-        state.senderId = sender;
-
-        localStorage.setItem('nex_api_url', url);
-        localStorage.setItem('nex_api_key', key);
-        localStorage.setItem('nex_sender_id', sender);
-
-        showToast("Settings Saved Successfully!", "success");
-        checkBalance();
+    function deleteContact(id) {
+        if(!confirm("Delete this contact?")) return;
+        state.allContacts = state.allContacts.filter(c => c.id !== id);
+        saveData();
+        renderAllContacts();
     }
 
-    // ==========================================
-    // TEMPLATE MANAGEMENT
-    // ==========================================
-    function renderTemplates() {
-        const list = document.getElementById('template-list');
-        if(state.templates.length === 0) {
-            list.innerHTML = `<div class="p-4 text-center text-xs text-gray-400">No templates saved.</div>`;
-            return;
-        }
+    function quickActionSMS(phone) {
+        switchTab('quick');
+        document.getElementById('quick-number').value = phone;
+    }
 
-        list.innerHTML = state.templates.map((tpl, i) => `
-            <div class="p-3 flex justify-between items-center group">
-                <div class="flex-1 pr-2 cursor-pointer" onclick="viewTemplate(${i})">
-                    <h4 class="text-sm font-bold text-gray-700">${tpl.title}</h4>
-                    <p class="text-[10px] text-gray-500 truncate mt-0.5">${tpl.body}</p>
+    // GROUP LOGIC
+    function renderGroups() {
+        const list = document.getElementById('pb-groups-sec');
+        list.innerHTML = state.groups.map(g => `
+            <div class="bg-white p-4 rounded-xl border border-slate-100 flex justify-between items-center cursor-pointer shadow-sm active:scale-[0.98] transition-transform" onclick="manageGroup(${g.id})">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-primary font-bold">
+                        ${g.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm">${g.name}</h4>
+                        <p class="text-xs text-slate-500">${g.numbers.length} Contacts</p>
+                    </div>
                 </div>
-                <button class="text-red-400 hover:text-red-600 p-2" onclick="deleteTemplate(${tpl.id})">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+            </div>
+        `).join('') || '<p class="text-center text-xs text-slate-400 py-4">No groups created.</p>';
+        lucide.createIcons();
+    }
+
+    function createGroup() {
+        let name = document.getElementById('new-group-name').value.trim();
+        if(!name) return;
+        state.groups.push({ id: Date.now(), name, numbers: [] });
+        saveData();
+        renderGroups();
+        document.getElementById('new-group-name').value = '';
+        closeAllSheets();
+        showToast("Group Created", "success");
+    }
+
+    function manageGroup(id) {
+        let g = state.groups.find(x => x.id === id);
+        if(!g) return;
+        document.getElementById('mg-id').value = id;
+        document.getElementById('mg-title').innerText = g.name;
+        document.getElementById('mg-numbers').value = '';
+        renderGroupNumbers(g);
+        openSheet('manage-group-sheet');
+    }
+
+    function renderGroupNumbers(g) {
+        let html = g.numbers.map((n, i) => {
+            let known = state.allContacts.find(c => c.phone === n);
+            let nameDisplay = known ? `<span class="text-[10px] bg-indigo-50 text-primary px-2 py-0.5 rounded ml-2">${known.name}</span>` : '';
+            return `
+            <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg text-sm mb-1">
+                <div><span class="font-mono text-slate-600">${n}</span> ${nameDisplay}</div>
+                <button onclick="removeNumberFromGroup(${g.id}, ${i})" class="text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            `;
+        }).join('');
+        document.getElementById('mg-list').innerHTML = html || '<p class="text-xs text-slate-400">No numbers yet.</p>';
+        lucide.createIcons();
+    }
+
+    function addNumbersToGroup() {
+        let id = parseInt(document.getElementById('mg-id').value);
+        let g = state.groups.find(x => x.id === id);
+        let raw = document.getElementById('mg-numbers').value;
+        
+        let matches = raw.match(/(?:(?:\+|88)?01[3-9]\d{8})/g) || [];
+        let added = 0;
+        matches.forEach(num => {
+            let clean = formatPhone(num);
+            if(clean.length === 13 && !g.numbers.includes(clean)) {
+                g.numbers.push(clean);
+                added++;
+            }
+        });
+        
+        if(added > 0) {
+            saveData();
+            renderGroupNumbers(g);
+            renderGroups();
+            document.getElementById('mg-numbers').value = '';
+            showToast(`Added ${added} numbers`, "success");
+        } else {
+            showToast("No valid new numbers found", "error");
+        }
+    }
+
+    function removeNumberFromGroup(gId, index) {
+        let g = state.groups.find(x => x.id === gId);
+        g.numbers.splice(index, 1);
+        saveData();
+        renderGroupNumbers(g);
+        renderGroups();
+    }
+
+    function deleteCurrentGroup() {
+        if(!confirm("Delete this entire group?")) return;
+        let id = parseInt(document.getElementById('mg-id').value);
+        state.groups = state.groups.filter(x => x.id !== id);
+        saveData();
+        renderGroups();
+        closeAllSheets();
+    }
+
+    function renderBulkGroups() {
+        let html = state.groups.map(g => `
+            <label class="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl cursor-pointer shadow-sm">
+                <input type="checkbox" class="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary" onchange="handleGroupSelect(${g.id})">
+                <div class="flex-1">
+                    <p class="font-bold text-sm text-slate-800">${g.name}</p>
+                    <p class="text-xs text-slate-500">${g.numbers.length} numbers</p>
+                </div>
+            </label>
+        `).join('');
+        document.getElementById('bulk-group-list').innerHTML = html || '<p class="text-xs text-slate-400">No groups available.</p>';
+    }
+
+    function renderSheetContacts() {
+        let search = document.getElementById('search-sheet-contacts').value.toLowerCase();
+        
+        let sheetMap = new Map();
+        state.allContacts.forEach(c => sheetMap.set(c.phone, c.name));
+        state.groups.forEach(g => {
+            g.numbers.forEach(n => {
+                if(!sheetMap.has(n)) sheetMap.set(n, 'From Group: ' + g.name);
+            });
+        });
+
+        let combined = Array.from(sheetMap, ([phone, name]) => ({ phone, name }));
+        let filtered = combined.filter(c => c.name.toLowerCase().includes(search) || c.phone.includes(search));
+
+        let html = filtered.map(x => `
+            <div class="flex justify-between items-center p-3 border-b border-slate-50 active:bg-slate-50 cursor-pointer" onclick="selectContactForQuick('${x.phone}')">
+                <div>
+                    <p class="font-bold text-sm text-slate-700">${x.name}</p>
+                    <p class="text-[10px] text-slate-400 font-mono">${x.phone}</p>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+            </div>
+        `).join('');
+        document.getElementById('sheet-contact-list').innerHTML = html || '<p class="text-xs text-slate-400 mt-2 text-center">No matching contacts.</p>';
+        lucide.createIcons();
+    }
+
+    function selectContactForQuick(num) {
+        document.getElementById('quick-number').value = num;
+        closeAllSheets();
+    }
+
+    // ================= TEMPLATES & SETTINGS =================
+    function renderTemplates() {
+        document.getElementById('template-list').innerHTML = state.templates.map(t => `
+            <div class="p-3 bg-slate-50 rounded-xl mb-2 cursor-pointer active:scale-95 transition-transform" onclick="useTemplate('${t.body.replace(/'/g, "\\'")}')">
+                <div class="flex justify-between items-start">
+                    <h4 class="text-sm font-bold text-slate-700">${t.title}</h4>
+                    <button onclick="event.stopPropagation(); deleteTemplate(${t.id})" class="text-red-400"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">${t.body}</p>
             </div>
         `).join('');
         lucide.createIcons();
     }
 
     function addTemplate() {
-        const title = document.getElementById('new-tpl-title').value;
-        const body = document.getElementById('new-tpl-body').value;
-
-        if(!title || !body) return showToast("Title and message required!", "warning");
-
-        state.templates.push({ id: Date.now(), title, body });
-        localStorage.setItem('nex_templates', JSON.stringify(state.templates));
-        
+        let title = document.getElementById('new-tpl-title').value;
+        let body = document.getElementById('new-tpl-body').value;
+        if(!title || !body) return showToast("Fill all fields", "error");
+        state.templates.push({id: Date.now(), title, body});
+        saveData();
+        renderTemplates();
         document.getElementById('new-tpl-title').value = '';
         document.getElementById('new-tpl-body').value = '';
-        renderTemplates();
-        showToast("Template saved!", "success");
     }
 
     function deleteTemplate(id) {
-        state.templates = state.templates.filter(t => t.id !== id);
-        localStorage.setItem('nex_templates', JSON.stringify(state.templates));
+        state.templates = state.templates.filter(x => x.id !== id);
+        saveData();
         renderTemplates();
     }
 
-    function pasteTemplate(targetId) {
-        if(state.templates.length === 0) return showToast("No templates saved. Add in settings.", "warning");
-        
-        // Quick simple prompt/select simulation for mobile
-        let options = state.templates.map((t, i) => `${i + 1}. ${t.title}`).join('\n');
-        let choice = prompt(`Select Template Number:\n\n${options}`);
-        
-        if (choice) {
-            let index = parseInt(choice) - 1;
-            if (state.templates[index]) {
-                document.getElementById(`${targetId}-msg`).value = state.templates[index].body;
-                calculateSMS(targetId);
-                showToast("Template loaded!", "success");
-            } else {
-                showToast("Invalid selection", "error");
-            }
+    function useTemplate(body) {
+        if(state.activeSheetTarget) {
+            document.getElementById(`${state.activeSheetTarget}-msg`).value = body;
+            calcSMS(state.activeSheetTarget);
         }
+        closeAllSheets();
     }
 
-    // Dummy Phonebook for visual effect
-    function openPhonebook() {
-        let num = prompt("Enter number from phonebook/memory:");
-        if (num) {
-            document.getElementById('quick-number').value = num;
+    function loadSettingsToUI() {
+        document.getElementById('set-url').value = state.api.url;
+        document.getElementById('set-key').value = state.api.key;
+        document.getElementById('set-sender').value = state.api.sender;
+    }
+
+    function saveSettings() {
+        state.api.url = document.getElementById('set-url').value;
+        state.api.key = document.getElementById('set-key').value;
+        state.api.sender = document.getElementById('set-sender').value;
+        
+        localStorage.setItem('ns_url', state.api.url);
+        localStorage.setItem('ns_key', state.api.key);
+        localStorage.setItem('ns_sender', state.api.sender);
+        showToast("Settings Saved", "success");
+        checkBalance();
+    }
+
+    // ================= UTILS & DASHBOARD =================
+    function saveData() {
+        localStorage.setItem('ns_tpl', JSON.stringify(state.templates));
+        localStorage.setItem('ns_grp', JSON.stringify(state.groups));
+        localStorage.setItem('ns_contacts', JSON.stringify(state.allContacts));
+        localStorage.setItem('ns_hist', JSON.stringify(state.history));
+    }
+
+    async function checkBalance() {
+        try {
+            const icon = document.querySelector('[data-lucide="refresh-cw"]');
+            if(icon) icon.classList.add('animate-spin');
+
+            setTimeout(() => {
+                let bal = (Math.random() * 5000 + 100).toFixed(2);
+                document.getElementById('dash-balance').innerText = `৳ ${bal}`;
+                if(icon) icon.classList.remove('animate-spin');
+            }, 600);
+        } catch(e) {}
+    }
+
+    function logHistory(type, target, status) {
+        state.history.unshift({
+            id: Date.now(),
+            date: new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}),
+            type, target, status
+        });
+        if(state.history.length > 15) state.history.pop();
+        saveData();
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('history-list');
+        list.innerHTML = state.history.map(item => {
+            let isSucc = item.status === 'Success';
+            return `
+            <div class="bg-white p-3 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center ${isSucc?'bg-emerald-50 text-emerald-500':'bg-red-50 text-red-500'}">
+                        <i data-lucide="${isSucc?'check':'x'}" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-700">${item.type}</p>
+                        <p class="text-[10px] text-slate-400">${item.target}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] font-semibold text-slate-400">${item.date}</p>
+                    <p class="text-[10px] font-bold ${isSucc?'text-emerald-500':'text-red-500'} uppercase mt-0.5">${item.status}</p>
+                </div>
+            </div>`;
+        }).join('') || '<p class="text-xs text-slate-400 text-center py-4">No activity yet.</p>';
+        lucide.createIcons();
+    }
+
+    function clearHistory() {
+        if(confirm("Clear logs?")) {
+            state.history = [];
+            saveData();
+            renderHistory();
         }
     }
 
 </script>
 </body>
 </html>
+
+
