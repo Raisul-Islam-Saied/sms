@@ -354,7 +354,7 @@
             <div class="text-right flex items-center gap-3">
                 <div class="text-right">
                     <p class="text-indigo-200 text-[10px] uppercase tracking-wider font-semibold">Balance</p>
-                    <h2 class="text-lg font-bold leading-none mt-1" id="dash-balance">৳ 0.00</h2>
+                    <h2 class="text-lg font-bold leading-none mt-1" id="dash-balance">...</h2>
                 </div>
                 <div class="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md cursor-pointer active:scale-90 transition-all" onclick="checkBalance()" title="Refresh Balance">
                     <i data-lucide="refresh-cw" class="w-4 h-4 text-white"></i>
@@ -451,7 +451,7 @@
         </button>
     </main>
 
-    <!-- 3. BULK CAMPAIGN (UPDATED WITH EXCEL) -->
+    <!-- 3. BULK CAMPAIGN -->
     <main id="view-bulk" class="view-container hide-scroll">
         <h2 class="text-xl font-bold text-slate-800 mb-4 mt-2">Bulk Campaign</h2>
 
@@ -509,7 +509,7 @@
                 <button onclick="openSheet('template-sheet', 'bulk')" class="text-xs font-semibold text-primary bg-indigo-50 px-3 py-1 rounded-full active:scale-95 transition-transform">Templates</button>
             </div>
 
-            <!-- Dynamic Variables Container (Only shown in File Mode) -->
+            <!-- Dynamic Variables Container -->
             <div id="dynamic-vars-container" class="hidden mb-2">
                 <p class="text-[10px] text-slate-400 font-semibold mb-1">Click to insert dynamic variables:</p>
                 <div id="dynamic-vars-list" class="flex flex-wrap">
@@ -517,8 +517,22 @@
                 </div>
             </div>
 
-            <textarea id="bulk-msg" class="input-modern min-h-[120px] resize-none pb-12" placeholder="Write campaign message..." oninput="calcSMS('bulk')"></textarea>
+            <textarea id="bulk-msg" class="input-modern min-h-[120px] resize-none pb-2" placeholder="Write campaign message..." oninput="calcSMS('bulk')"></textarea>
             
+            <!-- Dynamic Message Preview Box -->
+            <div id="dynamic-preview-sec" class="hidden mt-3 bg-indigo-50/60 p-3 rounded-xl border border-indigo-100/50 relative">
+                <div class="flex justify-between items-center mb-1">
+                    <p class="text-[10px] font-bold text-indigo-500 uppercase">Live Preview</p>
+                    <div class="flex gap-3 items-center">
+                        <button onclick="changePreviewRow(-1)" class="text-indigo-400 active:text-indigo-600"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                        <span id="preview-row-idx" class="text-[10px] font-bold text-slate-600">Row 1</span>
+                        <button onclick="changePreviewRow(1)" class="text-indigo-400 active:text-indigo-600"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+                <p id="dynamic-preview-text" class="text-xs text-slate-700 leading-relaxed font-mono mt-1 break-words">No message to preview...</p>
+                <p id="dynamic-preview-to" class="text-[9px] text-slate-400 mt-2 font-mono">To: </p>
+            </div>
+
             <div class="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100 grid grid-cols-3 gap-2 text-center">
                 <div title="Max Parts per SMS">
                     <p class="text-[10px] text-slate-400 font-bold uppercase">Parts/SMS</p>
@@ -586,7 +600,7 @@
             <div class="space-y-3">
                 <div>
                     <label class="text-xs text-slate-500 font-semibold ml-1">API Base URL</label>
-                    <input type="text" id="set-url" class="input-modern py-2.5 text-sm" placeholder="https://api.domain.com">
+                    <input type="text" id="set-url" class="input-modern py-2.5 text-sm" placeholder="e.g. https://api.domain.com">
                 </div>
                 <div>
                     <label class="text-xs text-slate-500 font-semibold ml-1">API Key</label>
@@ -594,7 +608,7 @@
                 </div>
                 <div>
                     <label class="text-xs text-slate-500 font-semibold ml-1">Sender ID</label>
-                    <input type="text" id="set-sender" class="input-modern py-2.5 text-sm font-mono" placeholder="880961...">
+                    <input type="text" id="set-sender" class="input-modern py-2.5 text-sm font-mono" placeholder="e.g. 880961...">
                 </div>
                 <button onclick="saveSettings()" class="w-full bg-slate-800 text-white py-2.5 rounded-xl font-semibold mt-2 active:scale-95 transition-transform">Save Details</button>
             </div>
@@ -613,7 +627,7 @@
 
         <div class="text-center mt-6 opacity-50">
             <p class="text-xs font-bold text-slate-500">NexSMS Premium</p>
-            <p class="text-[10px] text-slate-400">Version 4.0 (Dynamic Edition)</p>
+            <p class="text-[10px] text-slate-400">Version 5.0 (Stable Production)</p>
         </div>
     </main>
 
@@ -625,7 +639,7 @@
         </div>
         <div class="nav-item" id="nav-quick" onclick="switchTab('quick')">
             <div class="icon-box"><i data-lucide="zap" class="w-5 h-5"></i></div>
-            <span>Quick SMS</span>
+            <span>Quick</span>
         </div>
         <div class="nav-item" id="nav-bulk" onclick="switchTab('bulk')">
             <div class="icon-box"><i data-lucide="layers" class="w-5 h-5"></i></div>
@@ -718,9 +732,9 @@
     const COST_PER_SMS = 0.35;
     let state = {
         api: {
-            url: localStorage.getItem('ns_url') || '/proxy',
-            key: localStorage.getItem('ns_key') || 'NXri2cvcrank4t931wY1',
-            sender: localStorage.getItem('ns_sender') || '8809617613401'
+            url: localStorage.getItem('ns_url') || '',
+            key: localStorage.getItem('ns_key') || '',
+            sender: localStorage.getItem('ns_sender') || ''
         },
         pin: localStorage.getItem('ns_pin') || null,
         synced: localStorage.getItem('ns_synced') === 'true',
@@ -740,7 +754,8 @@
             selectedGroups: [],
             fileData: [],
             fileHeaders: [],
-            phoneCol: ''
+            phoneCol: '',
+            previewIndex: 0
         },
         activeSheetTarget: null
     };
@@ -930,7 +945,7 @@
         state.activeSheetTarget = null;
     }
 
-    // ================= SMS ENGINE (DYNAMIC CALC) =================
+    // ================= REAL API INTEGRATION & SMS ENGINE =================
     function calculateSingleSmsParts(text) {
         const charCount = text.length;
         const isUnicode = /[^\u0000-\u00ff]/.test(text);
@@ -965,6 +980,7 @@
         if (type === 'bulk') {
             document.getElementById('bulk-parts').innerText = parts;
             calculateBulkTotal();
+            if(bulkMode === 'file') renderDynamicPreview();
         }
     }
 
@@ -976,8 +992,10 @@
         return clean;
     }
 
-    // ================= QUICK SMS =================
+    // ---- REAL QUICK SMS ----
     async function sendQuickSMS() {
+        if(!state.api.url || !state.api.key) return showToast("API Settings Missing!", "error");
+        
         const phone = formatPhone(document.getElementById('quick-number').value);
         const msg = document.getElementById('quick-msg').value;
 
@@ -987,25 +1005,32 @@
         const payload = { api_key: state.api.key, senderid: state.api.sender, number: phone, message: msg };
         
         try {
-            showToast("Sending...", "info");
+            showToast("Sending via API...", "info");
             let res = await fetch(`${state.api.url}/smsapi`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-            }).catch(() => ({ ok: true, isMock: true })); 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify(payload)
+            });
             
-            if(res.ok) {
+            let text = await res.text();
+            
+            // Check success based on standard API practices (Status 200/202 or success text)
+            if(res.ok || text.includes('202') || text.toLowerCase().includes('success')) {
                 showToast("SMS Sent Successfully!", "success");
                 logHistory('Quick SMS', phone, 'Success');
                 document.getElementById('quick-msg').value = '';
                 calcSMS('quick');
                 checkBalance();
-            } else throw new Error();
+            } else {
+                throw new Error(text || "API Error Response");
+            }
         } catch(e) {
-            showToast("Failed to send", "error");
+            showToast("Failed: Check URL/Network", "error");
             logHistory('Quick SMS', phone, 'Failed');
         }
     }
 
-    // ================= BULK SMS (EXCEL & DYNAMIC UPDATE) =================
+    // ================= BULK SMS & DYNAMIC ENGINE =================
     let bulkMode = 'raw';
     function toggleBulkTab(mode) {
         bulkMode = mode;
@@ -1020,10 +1045,13 @@
         document.getElementById('bulk-group-sec').style.display = mode === 'groups' ? 'block' : 'none';
         document.getElementById('bulk-file-sec').style.display = mode === 'file' ? 'block' : 'none';
         
-        document.getElementById('dynamic-vars-container').style.display = (mode === 'file' && state.bulkState.fileHeaders.length > 0) ? 'block' : 'none';
+        let hasHeaders = state.bulkState.fileHeaders.length > 0;
+        document.getElementById('dynamic-vars-container').style.display = (mode === 'file' && hasHeaders) ? 'block' : 'none';
         document.getElementById('dynamic-cost-warn').style.display = mode === 'file' ? 'block' : 'none';
+        document.getElementById('dynamic-preview-sec').style.display = (mode === 'file' && hasHeaders) ? 'block' : 'none';
 
         calculateBulkTotal();
+        if(mode === 'file') renderDynamicPreview();
     }
 
     // --- Excel File Handling ---
@@ -1043,15 +1071,19 @@
                 
                 if(jsonData.length === 0) return showToast("File is empty or invalid", "error");
 
-                state.bulkState.fileData = jsonData;
-                state.bulkState.fileHeaders = Object.keys(jsonData[0]);
+                // Filter out empty rows
+                state.bulkState.fileData = jsonData.filter(row => Object.keys(row).length > 0);
+                state.bulkState.fileHeaders = Object.keys(state.bulkState.fileData[0] || {});
                 
+                if(state.bulkState.fileHeaders.length === 0) return showToast("Invalid headers", "error");
+
                 // Auto guess phone column
                 let pCol = state.bulkState.fileHeaders.find(h => /phone|mobile|contact|number|sms/i.test(h)) || state.bulkState.fileHeaders[0];
                 state.bulkState.phoneCol = pCol;
+                state.bulkState.previewIndex = 0;
 
                 renderFilePreview();
-                showToast(`Loaded ${jsonData.length} rows successfully`, "success");
+                showToast(`Loaded ${state.bulkState.fileData.length} rows successfully`, "success");
             } catch (err) {
                 console.error(err);
                 showToast("Error reading Excel/CSV file", "error");
@@ -1076,20 +1108,26 @@
             `<div class="dynamic-var-tag" onclick="insertDynamicVar('${h}')">{{${h}}}</div>`
         ).join('');
 
+        document.getElementById('dynamic-preview-sec').style.display = 'block';
+
         calculateBulkTotal();
+        renderDynamicPreview();
     }
 
     function updateFilePhoneCol() {
         state.bulkState.phoneCol = document.getElementById('file-phone-col').value;
         calculateBulkTotal();
+        renderDynamicPreview();
     }
 
     function clearFile() {
         document.getElementById('bulk-file-input').value = '';
         state.bulkState.fileData = [];
         state.bulkState.fileHeaders = [];
+        state.bulkState.previewIndex = 0;
         document.getElementById('file-preview-area').style.display = 'none';
         document.getElementById('dynamic-vars-container').style.display = 'none';
+        document.getElementById('dynamic-preview-sec').style.display = 'none';
         calculateBulkTotal();
     }
 
@@ -1097,15 +1135,53 @@
         const textarea = document.getElementById('bulk-msg');
         const insertText = `{{${varName}}}`;
         
-        // Insert at cursor
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         textarea.value = textarea.value.substring(0, start) + insertText + textarea.value.substring(end);
         
-        // Move cursor after inserted tag
         textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
         textarea.focus();
         calcSMS('bulk');
+    }
+
+    // --- Dynamic Preview Logic ---
+    function changePreviewRow(dir) {
+        if(state.bulkState.fileData.length === 0) return;
+        state.bulkState.previewIndex += dir;
+        
+        if(state.bulkState.previewIndex < 0) state.bulkState.previewIndex = state.bulkState.fileData.length - 1;
+        if(state.bulkState.previewIndex >= state.bulkState.fileData.length) state.bulkState.previewIndex = 0;
+        
+        renderDynamicPreview();
+    }
+
+    function renderDynamicPreview() {
+        if(bulkMode !== 'file' || state.bulkState.fileData.length === 0) return;
+        
+        let idx = state.bulkState.previewIndex;
+        let row = state.bulkState.fileData[idx];
+        let templateMsg = document.getElementById('bulk-msg').value;
+
+        if(!templateMsg.trim()) {
+            document.getElementById('dynamic-preview-text').innerText = "Type a message above to preview...";
+            document.getElementById('dynamic-preview-text').classList.add('text-slate-400', 'italic');
+            document.getElementById('dynamic-preview-to').innerText = "To: --";
+            document.getElementById('preview-row-idx').innerText = `Row ${idx + 1}`;
+            return;
+        }
+
+        let dynamicMsg = templateMsg;
+        state.bulkState.fileHeaders.forEach(h => {
+            let val = row[h] !== undefined ? row[h] : '';
+            dynamicMsg = dynamicMsg.replace(new RegExp(`{{${h}}}`, 'g'), val);
+        });
+
+        document.getElementById('dynamic-preview-text').innerText = dynamicMsg;
+        document.getElementById('dynamic-preview-text').classList.remove('text-slate-400', 'italic');
+        
+        let phoneStr = row[state.bulkState.phoneCol] ? formatPhone(row[state.bulkState.phoneCol]) : '--';
+        document.getElementById('dynamic-preview-to').innerText = `To: ${phoneStr}`;
+        document.getElementById('preview-row-idx').innerText = `Row ${idx + 1}`;
     }
 
     // --- Bulk Logic Core ---
@@ -1139,13 +1215,11 @@
         const templateMsg = document.getElementById('bulk-msg').value;
 
         if (bulkMode === 'file') {
-            // For Excel: Need to accurately count valid numbers and dynamic parts
             if(state.bulkState.fileData.length > 0 && state.bulkState.phoneCol) {
                 state.bulkState.fileData.forEach(row => {
                     let phone = formatPhone(row[state.bulkState.phoneCol]);
                     if(phone.length === 13) {
                         totalNumbers++;
-                        // Build dynamic message for this specific user
                         let msg = templateMsg;
                         state.bulkState.fileHeaders.forEach(h => {
                             let val = row[h] !== undefined ? row[h] : '';
@@ -1156,7 +1230,6 @@
                 });
             }
         } else {
-            // For Raw or Groups
             if(bulkMode === 'raw') {
                 totalNumbers = state.bulkState.raw.length;
             } else if (bulkMode === 'groups') {
@@ -1173,7 +1246,6 @@
 
         let cost = totalSmsCount * COST_PER_SMS;
         
-        // Show mixed parts string if dynamic
         if(bulkMode === 'file' && templateMsg.includes('{{')) {
             document.getElementById('bulk-parts').innerText = 'Dynamic';
         }
@@ -1183,33 +1255,83 @@
         return { totalNumbers, totalSmsCount };
     }
 
+    // ---- REAL BULK SMS ----
     async function sendBulkSMS() {
+        if(!state.api.url || !state.api.key) return showToast("API Settings Missing!", "error");
+
         const stats = calculateBulkTotal();
         if(stats.totalNumbers === 0) return showToast("No valid numbers found!", "error");
         
-        const msg = document.getElementById('bulk-msg').value;
-        if(!msg.trim()) return showToast("Message is empty!", "error");
+        const templateMsg = document.getElementById('bulk-msg').value;
+        if(!templateMsg.trim()) return showToast("Message is empty!", "error");
 
-        if(!confirm(`Send campaign to ${stats.totalNumbers} contacts?\nTotal SMS: ${stats.totalSmsCount}\nEst. Cost: ৳ ${(stats.totalSmsCount * COST_PER_SMS).toFixed(2)}`)) return;
+        if(!confirm(`Launch campaign to ${stats.totalNumbers} contacts?\nTotal SMS Parts: ${stats.totalSmsCount}\nEst. Cost: ৳ ${(stats.totalSmsCount * COST_PER_SMS).toFixed(2)}`)) return;
 
-        showToast("Processing Campaign...", "info");
+        showToast("Processing API Campaign...", "info");
         
-        // Simulate Processing Payload
-        setTimeout(() => {
-            showToast(`Campaign launched to ${stats.totalNumbers} contacts!`, "success");
-            logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Success');
-            document.getElementById('bulk-msg').value = '';
-            
-            if(bulkMode === 'raw') {
-                document.getElementById('bulk-numbers').value = '';
-                state.bulkState.raw = [];
-                processBulkNumbers();
-            } else if (bulkMode === 'file') {
-                clearFile();
+        let finalMessages = [];
+
+        if(bulkMode === 'file') {
+            state.bulkState.fileData.forEach(row => {
+                let phone = formatPhone(row[state.bulkState.phoneCol]);
+                if(phone.length === 13) {
+                    let msg = templateMsg;
+                    state.bulkState.fileHeaders.forEach(h => {
+                        let val = row[h] !== undefined ? row[h] : '';
+                        msg = msg.replace(new RegExp(`{{${h}}}`, 'g'), val);
+                    });
+                    finalMessages.push({ to: phone, message: msg });
+                }
+            });
+        } else {
+            let targetNumbers = [];
+            if(bulkMode === 'raw') targetNumbers = state.bulkState.raw;
+            if(bulkMode === 'groups') {
+                let numSet = new Set();
+                state.bulkState.selectedGroups.forEach(gId => {
+                    let group = state.groups.find(g => g.id === gId);
+                    if(group) group.numbers.forEach(n => numSet.add(n));
+                });
+                targetNumbers = Array.from(numSet);
             }
+            targetNumbers.forEach(num => finalMessages.push({ to: num, message: templateMsg }));
+        }
+
+        const payload = {
+            api_key: state.api.key,
+            senderid: state.api.sender,
+            messages: finalMessages
+        };
+
+        try {
+            let res = await fetch(`${state.api.url}/smsapimany`, {
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify(payload)
+            });
             
-            checkBalance();
-        }, 1500);
+            let text = await res.text();
+            
+            if(res.ok || text.includes('202') || text.toLowerCase().includes('success')) {
+                showToast(`Campaign sent to ${stats.totalNumbers} contacts!`, "success");
+                logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Success');
+                document.getElementById('bulk-msg').value = '';
+                
+                if(bulkMode === 'raw') {
+                    document.getElementById('bulk-numbers').value = '';
+                    state.bulkState.raw = [];
+                    processBulkNumbers();
+                } else if (bulkMode === 'file') {
+                    clearFile();
+                }
+                checkBalance();
+            } else {
+                throw new Error(text || "API Error Response");
+            }
+        } catch(e) {
+            showToast("Campaign Failed: Network or API Error", "error");
+            logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Failed');
+        }
     }
 
     // ================= CONTACTS & GROUPS =================
@@ -1492,17 +1614,39 @@
         localStorage.setItem('ns_hist', JSON.stringify(state.history));
     }
 
+    // ---- REAL BALANCE API FETCH ----
     async function checkBalance() {
-        try {
-            const icon = document.querySelector('[data-lucide="refresh-cw"]');
-            if(icon) icon.classList.add('animate-spin');
+        if(!state.api.url || !state.api.key) {
+            document.getElementById('dash-balance').innerText = `API Missing`;
+            return;
+        }
 
-            setTimeout(() => {
-                let bal = (Math.random() * 5000 + 100).toFixed(2);
-                document.getElementById('dash-balance').innerText = `৳ ${bal}`;
-                if(icon) icon.classList.remove('animate-spin');
-            }, 600);
-        } catch(e) {}
+        const icon = document.querySelector('[data-lucide="refresh-cw"]');
+        if(icon) icon.classList.add('animate-spin');
+
+        try {
+            let res = await fetch(`${state.api.url}/balance?api_key=${state.api.key}`);
+            if(!res.ok) throw new Error();
+            
+            let dataText = await res.text();
+            let balanceVal = 0;
+            
+            try {
+                // Try parsing JSON first
+                let data = JSON.parse(dataText);
+                balanceVal = data.balance || 0;
+            } catch(jsonErr) {
+                // Fallback: If gateway returns plain text number
+                let parsed = parseFloat(dataText);
+                if(!isNaN(parsed)) balanceVal = parsed;
+            }
+
+            document.getElementById('dash-balance').innerText = `৳ ${parseFloat(balanceVal).toFixed(2)}`;
+        } catch(e) {
+            document.getElementById('dash-balance').innerText = `API Error`;
+        } finally {
+            if(icon) icon.classList.remove('animate-spin');
+        }
     }
 
     function logHistory(type, target, status) {
