@@ -1,0 +1,3 @@
+/proxy/smsapi https://bulksmsbd.net/api/smsapi 200!
+/proxy/smsapimany https://bulksmsbd.net/api/smsapimany 200!
+/proxy/balance https://bulksmsbd.net/api/getBalanceApi 200!
