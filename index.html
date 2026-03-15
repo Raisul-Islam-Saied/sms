@@ -1742,18 +1742,23 @@ function getApiErrorMessage(code) {
         }
         closeGroupContactSelector();
     }
-    function renderBulkGroups() {
-        let html = state.groups.map(g => `
-            <label class="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl cursor-pointer shadow-sm">
-                <input type="checkbox" class="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary" onchange="handleGroupSelect(${g.id})">
+        function renderBulkGroups() {
+        let html = state.groups.map(g => {
+            // চেক করবে এই গ্রুপটি আগে থেকে সিলেক্ট করা ছিল কি না
+            let isChecked = state.bulkState.selectedGroups.includes(g.id) ? 'checked' : '';
+            
+            return `
+            <label class="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl cursor-pointer shadow-sm active:scale-[0.98] transition-transform">
+                <input type="checkbox" class="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary" onchange="handleGroupSelect(${g.id})" ${isChecked}>
                 <div class="flex-1">
                     <p class="font-bold text-sm text-slate-800">${g.name}</p>
                     <p class="text-xs text-slate-500">${g.numbers.length} numbers</p>
                 </div>
             </label>
-        `).join('');
+        `}).join('');
         document.getElementById('bulk-group-list').innerHTML = html || '<p class="text-xs text-slate-400">No groups available.</p>';
     }
+
 
     function renderSheetContacts() {
         let search = document.getElementById('search-sheet-contacts').value.toLowerCase();
