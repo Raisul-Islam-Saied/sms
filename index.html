@@ -503,13 +503,19 @@
         </div>
 
         <!-- Raw Numbers Section -->
-        <div id="bulk-raw-sec" class="glass-card">
+                <div id="bulk-raw-sec" class="glass-card">
             <div class="flex justify-between items-center mb-2">
                 <label class="text-xs font-bold text-slate-500 uppercase">Paste Numbers</label>
-                <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg" id="bulk-valid-count">0 Valid</span>
+                <div class="flex gap-2">
+                    <button onclick="openRawContactSelector()" class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg flex items-center gap-1 active:scale-95 transition-transform">
+                        <i data-lucide="user-plus" class="w-3 h-3"></i> Add Contacts
+                    </button>
+                    <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg" id="bulk-valid-count">0 Valid</span>
+                </div>
             </div>
             <textarea id="bulk-numbers" class="input-modern min-h-[100px] resize-none text-xs" placeholder="01711...\n01822...\nSeparate by comma or new line" oninput="processBulkNumbers()"></textarea>
         </div>
+
 
         <!-- Contact Groups Section -->
         <div id="bulk-group-sec" class="glass-card hidden">
@@ -1640,7 +1646,22 @@ function getApiErrorMessage(code) {
 
 
     // --- Select Contacts into Group ---
+        // === কন্টাক্ট সিলেক্টরের নতুন লজিক ===
+    let targetForContacts = 'group'; // এটি ট্র্যাক করবে যে কন্টাক্টগুলো Raw বক্সে যাবে নাকি Group এ
+
+    // Raw বক্সে কন্টাক্ট আনার ফাংশন
+    function openRawContactSelector() {
+        targetForContacts = 'raw';
+        state.tempSelectedGroupContacts = [];
+        document.getElementById('gsc-search').value = '';
+        renderGroupContactSelector();
+        document.getElementById('sheet-overlay').classList.add('open');
+        document.getElementById('group-select-contacts-sheet').classList.add('open');
+    }
+
+    // গ্রুপে কন্টাক্ট আনার ফাংশন (আগেরটাই আপডেট করা)
     function openGroupContactSelector() {
+        targetForContacts = 'group';
         state.tempSelectedGroupContacts = [];
         document.getElementById('gsc-search').value = '';
         renderGroupContactSelector();
@@ -1650,27 +1671,49 @@ function getApiErrorMessage(code) {
 
     function closeGroupContactSelector() {
         document.getElementById('group-select-contacts-sheet').classList.remove('open');
-        document.getElementById('manage-group-sheet').classList.add('open');
+        if (targetForContacts === 'group') {
+            document.getElementById('manage-group-sheet').classList.add('open');
+        } else {
+            document.getElementById('sheet-overlay').classList.remove('open');
+        }
     }
 
-    function renderGroupContactSelector() {
-        let search = document.getElementById('gsc-search').value.toLowerCase();
-        let filtered = state.allContacts.filter(c => c.name.toLowerCase().includes(search) || c.phone.includes(search));
-        filtered.sort((a,b) => a.name.localeCompare(b.name));
+    function confirmGroupContactSelection() {
+        // যদি Raw বক্সে যোগ করতে বলা হয়
+        if (targetForContacts === 'raw') {
+            let textarea = document.getElementById('bulk-numbers');
+            let currentVals = textarea.value.trim();
+            let newVals = state.tempSelectedGroupContacts.join('\n');
+            
+            // বক্সে আগে থেকে নম্বর থাকলে তার সাথে নতুনগুলো যোগ হবে
+            textarea.value = currentVals ? currentVals + '\n' + newVals : newVals;
+            processBulkNumbers(); // অটোমেটিক কাউন্ট আপডেট করবে
+            
+            closeGroupContactSelector();
+            showToast(`Added ${state.tempSelectedGroupContacts.length} contacts!`, "success");
+            return;
+        }
 
-        let html = filtered.map(c => {
-            let isChecked = state.tempSelectedGroupContacts.includes(c.phone) ? 'checked' : '';
-            return `
-            <label class="flex items-center gap-3 p-3 bg-white border border-slate-50 rounded-xl cursor-pointer active:bg-slate-50">
-                <input type="checkbox" class="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary" value="${c.phone}" onchange="toggleTempContact(this)" ${isChecked}>
-                <div class="flex-1">
-                    <p class="font-bold text-sm text-slate-800">${c.name}</p>
-                    <p class="text-[10px] text-slate-500 font-mono">${c.phone}</p>
-                </div>
-            </label>
-            `;
-        }).join('');
-        document.getElementById('gsc-list').innerHTML = html || '<p class="text-xs text-slate-400 text-center mt-4">No contacts found.</p>';
+        // যদি গ্রুপে যোগ করতে বলা হয় (আগের লজিক)
+        let id = parseInt(document.getElementById('mg-id').value);
+        let g = state.groups.find(x => x.id === id);
+        if(!g) return;
+
+        let added = 0;
+        state.tempSelectedGroupContacts.forEach(phone => {
+            if(!g.numbers.includes(phone)) {
+                g.numbers.push(phone);
+                added++;
+            }
+        });
+
+        if(added > 0) {
+            saveData();
+            renderGroupNumbers(g);
+            renderGroups();
+            showToast(`Added ${added} contacts to group`, "success");
+        }
+        closeGroupContactSelector();
     }
 
     function toggleTempContact(checkbox) {
