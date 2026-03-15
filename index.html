@@ -794,22 +794,33 @@ url : "/proxy",
     };
 
     // ================= REAL API ERROR HANDLING LOGIC =================
-    function getApiErrorMessage(code) {
-        let ipMatch = code.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/);
-        let detectedIP = ipMatch ? ipMatch[0] : "খুঁজে পাওয়া যায়নি";
+function getApiErrorMessage(code) {
+    let errorStr = String(code); 
+    let ipMatch = errorStr.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/);
+    let detectedIP = ipMatch ? ipMatch[0] : "খুঁজে পাওয়া যায়নি";
 
-        if (code.includes("1001")) return "অকার্যকর বা ভুল মোবাইল নম্বর!";
-        if (code.includes("1006")) return "আপনার ব্যালেন্সের মেয়াদ শেষ!";
-        if (code.includes("1007")) return "অ্যাকাউন্টে পর্যাপ্ত SMS ব্যালেন্স নেই!";
-        if (code.includes("1012")) return "মাস্কিং এসএমএস অবশ্যই বাংলায় হতে হবে!";
-        if (code.includes("1002")) return "সেন্ডার আইডি (Sender ID) ভুল!";
-        
-        if (code.includes("1032")) {
-            return `আপনার সার্ভারের আইপি হোয়াইটলিস্ট করা নেই।<br>Your IP: <b style="color: #ef4444;">${detectedIP}</b>`;
-        }
-        
-        return `অজানা সমস্যা! সার্ভার রেসপন্স: ${code.substring(0, 15)} <br>Your IP: <b style="color: #ef4444;">${detectedIP}</b>`;
+    if (errorStr.includes("1001")) return "অকার্যকর বা ভুল মোবাইল নম্বর!";
+    if (errorStr.includes("1006")) return "আপনার ব্যালেন্সের মেয়াদ শেষ!";
+    if (errorStr.includes("1007")) return "অ্যাকাউন্টে পর্যাপ্ত SMS ব্যালেন্স নেই!";
+    if (errorStr.includes("1012")) return "মাস্কিং এসএমএস অবশ্যই বাংলায় হতে হবে!";
+    if (errorStr.includes("1002")) return "সেন্ডার আইডি (Sender ID) ভুল!";
+    if (errorStr.includes("1032")) {
+        return `আপনার সার্ভারের আইপি হোয়াইটলিস্ট করা নেই।<br>Your IP: <b style="color: #ef4444;">${detectedIP}</b>`;
     }
+    
+    // Netlify প্রক্সি বা _redirects মিসিং থাকলে এটি ধরবে
+    if (errorStr.includes("<html") || errorStr.includes("Not Found") || errorStr.includes("404")) {
+        return "আপনার Netlify _redirects ফাইলটি কাজ করছে না! ফোল্ডারে _redirects ফাইলটি আছে কিনা চেক করুন।";
+    }
+    
+    // ইন্টারনেট বা নেটওয়ার্ক এরর
+    if (errorStr.includes("Failed to fetch") || errorStr.includes("NetworkError")) {
+        return "নেটওয়ার্ক সমস্যা অথবা প্রক্সি লিংক কাজ করছে না!";
+    }
+    
+    // অন্য কোনো সমস্যা হলে পুরো মেসেজটি স্ক্রিনে দেখাবে
+    return `অজানা সমস্যা: ${errorStr.substring(0, 50)}`; 
+}
 
     // ================= INIT & SECURITY =================
     window.onload = () => {
