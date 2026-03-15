@@ -1793,9 +1793,9 @@ function getApiErrorMessage(code) {
     }
 
     // ================= TEMPLATES & SETTINGS =================
-    function renderTemplates() {
+        function renderTemplates() {
         document.getElementById('template-list').innerHTML = state.templates.map(t => `
-            <div class="p-3 bg-slate-50 rounded-xl mb-2 cursor-pointer active:scale-95 transition-transform" onclick="useTemplate('${t.body.replace(/'/g, "\\'")}')">
+            <div class="p-3 bg-slate-50 rounded-xl mb-2 cursor-pointer active:scale-95 transition-transform" onclick="useTemplate(${t.id})">
                 <div class="flex justify-between items-start">
                     <h4 class="text-sm font-bold text-slate-700">${t.title}</h4>
                     <button onclick="event.stopPropagation(); deleteTemplate(${t.id})" class="text-red-400"><i data-lucide="trash" class="w-4 h-4"></i></button>
@@ -1806,6 +1806,7 @@ function getApiErrorMessage(code) {
         lucide.createIcons();
     }
 
+    
     function addTemplate() {
         let title = document.getElementById('new-tpl-title').value;
         let body = document.getElementById('new-tpl-body').value;
@@ -1823,9 +1824,14 @@ function getApiErrorMessage(code) {
         renderTemplates();
     }
 
-    function useTemplate(body) {
+    // 🚀 ফিক্স: ফাংশনটি এখন আইডি রিসিভ করবে এবং বডি খুঁজে নেবে
+    function useTemplate(id) {
+        // আইডি দিয়ে টেমপ্লেটটি খুঁজে বের করা
+        const tpl = state.templates.find(t => t.id === id);
+        if(!tpl) return;
+
         if(state.activeSheetTarget) {
-            document.getElementById(`${state.activeSheetTarget}-msg`).value = body;
+            document.getElementById(`${state.activeSheetTarget}-msg`).value = tpl.body;
             calcSMS(state.activeSheetTarget);
         }
         closeAllSheets();
