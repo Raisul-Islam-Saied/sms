@@ -830,6 +830,8 @@ url : "/proxy",
         activeSheetTarget: null,
         tempSelectedGroupContacts: []
     };
+        let isSendingSMS = false; // ডাবল ক্লিক রোধ করার লক
+
     // ================= PREMIUM UI SOUNDS (WEB AUDIO API) =================
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -1062,20 +1064,27 @@ function getApiErrorMessage(code) {
 
     function haptic() { if (navigator.vibrate) navigator.vibrate(40); }
 
-    function showToast(msg, type = 'info') {
-        playSound(type);
+        function showToast(msg, type = 'info') {
+        playSound(type); // সাউন্ড প্লে হবে
         const container = document.getElementById('toast-container');
+        
+        // ম্যাজিক ট্রিক: নতুন মেসেজ আসার আগে আগের সব মেসেজ সাথে সাথে মুছে ফেলবে
+        container.innerHTML = ''; 
+
         const toast = document.createElement('div');
         let color = type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#3b82f6';
         toast.innerHTML = `<div style="width:8px; height:8px; border-radius:50%; background:${color}; flex-shrink:0; margin-top:5px;"></div> <div class="flex-1">${msg}</div>`;
         toast.className = 'toast';
         container.appendChild(toast);
+        
         setTimeout(() => {
             toast.style.opacity = '0';
             toast.style.transform = 'translateY(-20px) scale(0.95)';
             toast.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
-            setTimeout(() => toast.remove(), 400);
-        }, 2500);
+            setTimeout(() => {
+                if(toast.parentElement) toast.remove();
+            }, 400);
+        }, 2000);
     }
 
     // ================= BOTTOM SHEETS =================
@@ -1836,7 +1845,11 @@ function getApiErrorMessage(code) {
     }
 
     // ---- REAL QUICK SMS ----
+    // ---- REAL QUICK SMS ----
     async function sendQuickSMS() {
+        // লক চেক: যদি আগে থেকেই মেসেজ যাওয়া রানিং থাকে, তবে নতুন ক্লিক কাজ করবে না
+        if (isSendingSMS) return showToast("অপেক্ষা করুন, মেসেজটি যাচ্ছে...", "warning");
+        
         if(!state.api.url || !state.api.key) return showToast("API Settings Missing!", "error");
         
         const phone = formatPhone(document.getElementById('quick-number').value);
@@ -1845,6 +1858,16 @@ function getApiErrorMessage(code) {
         if(phone.length !== 13) return showToast("Invalid Number Format", "error");
         if(!msg.trim()) return showToast("Message is empty", "error");
 
+        // --- স্মার্ট কনফার্মেশন ---
+        let parts = calculateSingleSmsParts(msg);
+        let cost = (parts * COST_PER_SMS).toFixed(2);
+        let confirmText = `Send SMS to ${phone}?\nTotal Parts: ${parts}\nEst. Cost: ৳ ${cost}`;
+        let isConfirmed = await showCustomConfirm("Send Message", confirmText, { okText: "Send Now" });
+        if(!isConfirmed) return;
+
+        // প্রসেস শুরু, বাটন লক করা হলো
+        isSendingSMS = true; 
+        
         const payload = { api_key: state.api.key, senderid: state.api.sender, number: phone, message: msg };
         
         try {
@@ -1857,11 +1880,9 @@ function getApiErrorMessage(code) {
             
             let text = await res.text();
             
-            // কড়া চেক: রেজাল্টে অবশ্যই 202 লেখা থাকতে হবে
             if (text.includes("202")) {
                 showToast("SMS Sent Successfully!", "success");
                 logHistory('Quick SMS', phone, 'Success', msg);
-
                 document.getElementById('quick-msg').value = '';
                 calcSMS('quick');
                 checkBalance();
@@ -1873,61 +1894,40 @@ function getApiErrorMessage(code) {
             if(e.message && e.message.includes("<html")) errMsg = "প্রক্সি/সার্ভার কাজ করছে না (Netlify _redirects চেক করুন)";
             showToast(errMsg, "error");
             logHistory('Quick SMS', phone, 'Failed', msg);
-
+        } finally {
+            // প্রসেস শেষ (সাকসেস বা ফেইল যাই হোক না কেন), বাটন আনলক করে দেওয়া হলো
+            isSendingSMS = false; 
         }
-    }
-
+           }
     // ---- REAL BULK SMS ----
-    async function sendBulkSMS() {
+     // ---- REAL QUICK SMS ----
+    async function sendQuickSMS() {
+        // লক চেক: যদি আগে থেকেই মেসেজ যাওয়া রানিং থাকে, তবে নতুন ক্লিক কাজ করবে না
+        if (isSendingSMS) return showToast("অপেক্ষা করুন, মেসেজটি যাচ্ছে...", "warning");
+        
         if(!state.api.url || !state.api.key) return showToast("API Settings Missing!", "error");
-
-        const stats = calculateBulkTotal();
-        if(stats.totalNumbers === 0) return showToast("No valid numbers found!", "error");
         
-        const templateMsg = document.getElementById('bulk-msg').value;
-        if(!templateMsg.trim()) return showToast("Message is empty!", "error");
-    // sendBulkSMS ফাংশনের ভেতরে আগের confirm লাইনটি মুছে এটি দিন:
-    let confirmText = `Launch campaign to ${stats.totalNumbers} contacts?\nTotal SMS Parts: ${stats.totalSmsCount}\nEst. Cost: ৳ ${(stats.totalSmsCount * COST_PER_SMS).toFixed(2)}`;
-    let isConfirmed = await showCustomConfirm("Confirm Campaign", confirmText, { okText: "Launch" });
-    if(!isConfirmed) return;
-        showToast("Processing API Campaign...", "info");
+        const phone = formatPhone(document.getElementById('quick-number').value);
+        const msg = document.getElementById('quick-msg').value;
+
+        if(phone.length !== 13) return showToast("Invalid Number Format", "error");
+        if(!msg.trim()) return showToast("Message is empty", "error");
+
+        // --- স্মার্ট কনফার্মেশন ---
+        let parts = calculateSingleSmsParts(msg);
+        let cost = (parts * COST_PER_SMS).toFixed(2);
+        let confirmText = `Send SMS to ${phone}?\nTotal Parts: ${parts}\nEst. Cost: ৳ ${cost}`;
+        let isConfirmed = await showCustomConfirm("Send Message", confirmText, { okText: "Send Now" });
+        if(!isConfirmed) return;
+
+        // প্রসেস শুরু, বাটন লক করা হলো
+        isSendingSMS = true; 
         
-        let finalMessages = [];
-
-        if(bulkMode === 'file') {
-            state.bulkState.fileData.forEach(row => {
-                let phone = formatPhone(row[state.bulkState.phoneCol]);
-                if(phone.length === 13) {
-                    let msg = templateMsg;
-                    state.bulkState.fileHeaders.forEach(h => {
-                        let val = row[h] !== undefined ? row[h] : '';
-                        msg = msg.replace(new RegExp(`{{${h}}}`, 'g'), val);
-                    });
-                    finalMessages.push({ to: phone, message: msg });
-                }
-            });
-        } else {
-            let targetNumbers = [];
-            if(bulkMode === 'raw') targetNumbers = state.bulkState.raw;
-            if(bulkMode === 'groups') {
-                let numSet = new Set();
-                state.bulkState.selectedGroups.forEach(gId => {
-                    let group = state.groups.find(g => g.id === gId);
-                    if(group) group.numbers.forEach(n => numSet.add(n));
-                });
-                targetNumbers = Array.from(numSet);
-            }
-            targetNumbers.forEach(num => finalMessages.push({ to: num, message: templateMsg }));
-        }
-
-        const payload = {
-            api_key: state.api.key,
-            senderid: state.api.sender,
-            messages: finalMessages
-        };
-
+        const payload = { api_key: state.api.key, senderid: state.api.sender, number: phone, message: msg };
+        
         try {
-            let res = await fetch(`${state.api.url}/smsapimany`, {
+            showToast("Sending via API...", "info");
+            let res = await fetch(`${state.api.url}/smsapi`, {
                 method: 'POST', 
                 headers: {'Content-Type': 'application/json'}, 
                 body: JSON.stringify(payload)
@@ -1935,20 +1935,11 @@ function getApiErrorMessage(code) {
             
             let text = await res.text();
             
-            // কড়া চেক: রেজাল্টে অবশ্যই 202 লেখা থাকতে হবে
             if (text.includes("202")) {
-                showToast(`Campaign sent to ${stats.totalNumbers} contacts!`, "success");
-            logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Success', templateMsg);
-    
-    document.getElementById('bulk-msg').value = '';
-                
-                if(bulkMode === 'raw') {
-                    document.getElementById('bulk-numbers').value = '';
-                    state.bulkState.raw = [];
-                    processBulkNumbers();
-                } else if (bulkMode === 'file') {
-                    clearFile();
-                }
+                showToast("SMS Sent Successfully!", "success");
+                logHistory('Quick SMS', phone, 'Success', msg);
+                document.getElementById('quick-msg').value = '';
+                calcSMS('quick');
                 checkBalance();
             } else {
                 throw new Error(text || "API Error Response");
@@ -1957,11 +1948,12 @@ function getApiErrorMessage(code) {
             let errMsg = getApiErrorMessage(e.message || "Network Error");
             if(e.message && e.message.includes("<html")) errMsg = "প্রক্সি/সার্ভার কাজ করছে না (Netlify _redirects চেক করুন)";
             showToast(errMsg, "error");
-          logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Failed', templateMsg);
-  
+            logHistory('Quick SMS', phone, 'Failed', msg);
+        } finally {
+            // প্রসেস শেষ (সাকসেস বা ফেইল যাই হোক না কেন), বাটন আনলক করে দেওয়া হলো
+            isSendingSMS = false; 
+        }
     }
-    }
-
 
         function logHistory(type, target, status, message = "") {
         state.history.unshift({
