@@ -1960,13 +1960,16 @@ function getApiErrorMessage(code) {
         lucide.createIcons();
     }
 
-    function deleteSingleHistory(id) {
-        if(confirm("Delete this log?")) {
+        async function deleteSingleHistory(id) {
+        let isConfirmed = await showCustomConfirm("Delete Log", "Are you sure you want to delete this activity log?", { isDanger: true, okText: "Delete" });
+        
+        if(isConfirmed) {
             state.history = state.history.filter(item => item.id !== id);
             saveData();
             renderHistory();
         }
     }
+
 
     function openHistoryDetails(encodedData) {
         let item = JSON.parse(decodeURIComponent(encodedData));
@@ -2046,6 +2049,67 @@ function getApiErrorMessage(code) {
             document.getElementById('confirm-cancel-btn').onclick = () => closeAndResolve(false);
         });
     }
+    // ================= UX: BACK BUTTON & OVERLAY CLICK CONTROL =================
+
+    // ১. মডালের বাইরে (Overlay) ক্লিক করলে বন্ধ হওয়া
+    setTimeout(() => {
+        // History Modal Control
+        const histOverlay = document.getElementById('history-modal');
+        const histBox = document.getElementById('history-modal-box');
+        if(histOverlay && histBox) {
+            histBox.onclick = (e) => e.stopPropagation(); // মডালের ভেতরে ক্লিক করলে বন্ধ হবে না
+            histOverlay.onclick = (e) => {
+                if(e.target === histOverlay) closeHistoryModal();
+            };
+        }
+
+        // Custom Confirm Modal Control
+        const confirmOverlay = document.getElementById('custom-confirm');
+        const confirmBox = document.getElementById('custom-confirm-box');
+        if(confirmOverlay && confirmBox) {
+            confirmBox.onclick = (e) => e.stopPropagation();
+            confirmOverlay.onclick = (e) => {
+                if(e.target === confirmOverlay) {
+                    const cancelBtn = document.getElementById('confirm-cancel-btn');
+                    if(cancelBtn) cancelBtn.click(); // বাইরে ক্লিক করলে 'Cancel' বাটনের কাজ করবে
+                }
+            };
+        }
+    }, 1000);
+
+
+    // ২. মোবাইলের ব্যাক বাটন (Hardware Back Button) কন্ট্রোল
+    window.history.pushState({ app: "NexSMS" }, ""); // শুরুতে একটি ডামি হিস্ট্রি পুশ করা
+
+    window.addEventListener("popstate", function (e) {
+        let isModalOpen = false;
+
+        // Bottom Sheets (নিচের মেনুগুলো) চেক করা
+        if (document.getElementById('sheet-overlay').classList.contains('open')) {
+            closeAllSheets();
+            isModalOpen = true;
+        }
+        
+        // Custom Confirm (পপআপ অ্যালার্ট) চেক করা
+        const customConfirm = document.getElementById('custom-confirm');
+        if (customConfirm && customConfirm.style.display === 'flex') {
+            document.getElementById('confirm-cancel-btn').click();
+            isModalOpen = true;
+        }
+
+        // History Modal (পুরো মেসেজ দেখার স্ক্রিন) চেক করা
+        const histModal = document.getElementById('history-modal');
+        if (histModal && histModal.style.display === 'flex') {
+            closeHistoryModal();
+            isModalOpen = true;
+        }
+
+        // যদি কোনো মডাল খোলা থাকে, তবে সেটি বন্ধ করার পর আবার সিস্টেমে পুশ করব যাতে অ্যাপ থেকে বের না হয়
+        if (isModalOpen) {
+            window.history.pushState({ app: "NexSMS" }, "");
+        }
+        // আর যদি কোনো মডাল খোলা না থাকে, তবে ব্যাক বাটন চাপলে স্বাভাবিকভাবেই ব্রাউজার/অ্যাপ থেকে বের হয়ে যাবে
+    });
 
 </script>
 </body>
