@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#4F46E5">
     <title>NexSMS - Premium Bulk SMS</title>
-    
+        <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -2231,6 +2233,14 @@ function getApiErrorMessage(code) {
         }
         // আর যদি কোনো মডাল খোলা না থাকে, তবে ব্যাক বাটন চাপলে স্বাভাবিকভাবেই ব্রাউজার/অ্যাপ থেকে বের হয়ে যাবে
     });
+    // ================= PWA REGISTRATION =================
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(reg => console.log('Service Worker Registered!', reg.scope))
+                .catch(err => console.error('Service Worker Registration Failed!', err));
+        });
+    }
 
 </script>
 </body>
