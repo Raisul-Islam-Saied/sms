@@ -308,6 +308,29 @@
             </button>
         </div>
     </div>
+    <div id="history-modal" class="full-overlay" style="display: none; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px);">
+        <div class="bg-white p-5 rounded-2xl w-11/12 max-w-[360px] shadow-2xl relative transform scale-95 transition-transform" id="history-modal-box">
+            <button onclick="closeHistoryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 active:scale-90">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-4 border-b border-slate-100 pb-3">
+                <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-primary">
+                    <i data-lucide="message-square-text" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm" id="hist-modal-type">SMS Type</h3>
+                    <p class="text-[10px] text-slate-500 font-mono" id="hist-modal-target">Target</p>
+                </div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4 max-h-[200px] overflow-y-auto">
+                <p class="text-xs text-slate-700 leading-relaxed font-mono whitespace-pre-wrap" id="hist-modal-msg">Message content...</p>
+            </div>
+            <div class="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                <span id="hist-modal-date">Date</span>
+                <span id="hist-modal-status" class="uppercase">Status</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Lock Screen -->
     <div id="lock-screen" class="full-overlay" style="display: none;">
@@ -1867,40 +1890,81 @@ function getApiErrorMessage(code) {
     }
 
 
-    function logHistory(type, target, status) {
+        function logHistory(type, target, status, message = "") {
         state.history.unshift({
             id: Date.now(),
             date: new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}),
-            type, target, status
+            type, target, status, message // মেসেজটি সেভ করছি
         });
-        if(state.history.length > 15) state.history.pop();
+        if(state.history.length > 20) state.history.pop(); // ২০টি পর্যন্ত সেভ রাখবে
         saveData();
         renderHistory();
     }
 
-    function renderHistory() {
+
+        function renderHistory() {
         const list = document.getElementById('history-list');
         list.innerHTML = state.history.map(item => {
             let isSucc = item.status === 'Success';
+            let shortMsg = item.message ? item.message.substring(0, 35) + (item.message.length > 35 ? '...' : '') : 'No message preview';
+            
+            // JSON স্ট্রিং করার সময় কোটেশন সমস্যা এড়াতে ডাটা এনকোড করে নিচ্ছি
+            let safeItemData = encodeURIComponent(JSON.stringify(item));
+            
             return `
-            <div class="bg-white p-3 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center ${isSucc?'bg-emerald-50 text-emerald-500':'bg-red-50 text-red-500'}">
+            <div class="bg-white p-3 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm cursor-pointer active:scale-[0.98] transition-transform" onclick="openHistoryDetails('${safeItemData}')">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-8 h-8 rounded-full flex shrink-0 items-center justify-center ${isSucc?'bg-emerald-50 text-emerald-500':'bg-red-50 text-red-500'}">
                         <i data-lucide="${isSucc?'check':'x'}" class="w-4 h-4"></i>
                     </div>
-                    <div>
-                        <p class="text-sm font-bold text-slate-700">${item.type}</p>
-                        <p class="text-[10px] text-slate-400">${item.target}</p>
+                    <div class="overflow-hidden">
+                        <div class="flex items-center gap-2">
+                            <p class="text-sm font-bold text-slate-700">${item.type}</p>
+                            <p class="text-[9px] font-bold ${isSucc?'text-emerald-500':'text-red-500'} uppercase mt-0.5">${item.status}</p>
+                        </div>
+                        <p class="text-[10px] text-slate-500 truncate w-[140px]">${shortMsg}</p>
                     </div>
                 </div>
-                <div class="text-right">
+                <div class="text-right shrink-0 flex flex-col items-end gap-1">
                     <p class="text-[10px] font-semibold text-slate-400">${item.date}</p>
-                    <p class="text-[10px] font-bold ${isSucc?'text-emerald-500':'text-red-500'} uppercase mt-0.5">${item.status}</p>
+                    <button onclick="event.stopPropagation(); deleteSingleHistory(${item.id})" class="text-slate-300 hover:text-red-400 active:scale-90 p-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
                 </div>
             </div>`;
         }).join('') || '<p class="text-xs text-slate-400 text-center py-4">No activity yet.</p>';
         lucide.createIcons();
     }
+
+    function deleteSingleHistory(id) {
+        if(confirm("Delete this log?")) {
+            state.history = state.history.filter(item => item.id !== id);
+            saveData();
+            renderHistory();
+        }
+    }
+
+    function openHistoryDetails(encodedData) {
+        let item = JSON.parse(decodeURIComponent(encodedData));
+        document.getElementById('hist-modal-type').innerText = item.type;
+        document.getElementById('hist-modal-target').innerText = item.target;
+        document.getElementById('hist-modal-msg').innerText = item.message || 'No content available.';
+        document.getElementById('hist-modal-date').innerText = item.date;
+        document.getElementById('hist-modal-status').innerText = item.status;
+        document.getElementById('hist-modal-status').className = `uppercase ${item.status==='Success'?'text-emerald-500':'text-red-500'}`;
+        
+        const modal = document.getElementById('history-modal');
+        modal.style.display = 'flex';
+        setTimeout(() => document.getElementById('history-modal-box').classList.remove('scale-95'), 50);
+        haptic();
+    }
+
+    function closeHistoryModal() {
+        const modalBox = document.getElementById('history-modal-box');
+        modalBox.classList.add('scale-95');
+        setTimeout(() => document.getElementById('history-modal').style.display = 'none', 300);
+    }
+
 
     function clearHistory() {
         if(confirm("Clear logs?")) {
