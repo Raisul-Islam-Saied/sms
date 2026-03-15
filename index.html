@@ -1878,8 +1878,8 @@ function getApiErrorMessage(code) {
             let errMsg = getApiErrorMessage(e.message || "Network Error");
             // যদি প্রক্সি কাজ না করে HTML পেজ চলে আসে, তবে এই মেসেজটি দেখাবে
             if(e.message && e.message.includes("<html")) errMsg = "প্রক্সি/সার্ভার কাজ করছে না (Netlify _redirects চেক করুন)";
-            showToast(errMsg, "error");
-            document.getElementById('dash-balance').innerText = `Error`;
+           // showToast(errMsg, "error");
+            document.getElementById('dash-balance').innerText = `––`;
         } finally {
             if(icon) icon.classList.remove('animate-spin');
         }
