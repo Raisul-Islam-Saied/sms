@@ -1792,7 +1792,8 @@ function getApiErrorMessage(code) {
             // কড়া চেক: রেজাল্টে অবশ্যই 202 লেখা থাকতে হবে
             if (text.includes("202")) {
                 showToast("SMS Sent Successfully!", "success");
-                logHistory('Quick SMS', phone, 'Success');
+                logHistory('Quick SMS', phone, 'Success', msg);
+
                 document.getElementById('quick-msg').value = '';
                 calcSMS('quick');
                 checkBalance();
@@ -1803,7 +1804,8 @@ function getApiErrorMessage(code) {
             let errMsg = getApiErrorMessage(e.message || "Network Error");
             if(e.message && e.message.includes("<html")) errMsg = "প্রক্সি/সার্ভার কাজ করছে না (Netlify _redirects চেক করুন)";
             showToast(errMsg, "error");
-            logHistory('Quick SMS', phone, 'Failed');
+            logHistory('Quick SMS', phone, 'Failed', msg);
+
         }
     }
 
@@ -1867,8 +1869,9 @@ function getApiErrorMessage(code) {
             // কড়া চেক: রেজাল্টে অবশ্যই 202 লেখা থাকতে হবে
             if (text.includes("202")) {
                 showToast(`Campaign sent to ${stats.totalNumbers} contacts!`, "success");
-                logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Success');
-                document.getElementById('bulk-msg').value = '';
+            logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Success', templateMsg);
+    
+    document.getElementById('bulk-msg').value = '';
                 
                 if(bulkMode === 'raw') {
                     document.getElementById('bulk-numbers').value = '';
@@ -1885,8 +1888,9 @@ function getApiErrorMessage(code) {
             let errMsg = getApiErrorMessage(e.message || "Network Error");
             if(e.message && e.message.includes("<html")) errMsg = "প্রক্সি/সার্ভার কাজ করছে না (Netlify _redirects চেক করুন)";
             showToast(errMsg, "error");
-            logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Failed');
-        }
+          logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Failed', templateMsg);
+  
+    }
     }
 
 
