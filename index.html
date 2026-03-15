@@ -1043,46 +1043,7 @@ url : "/proxy",
         return clean;
     }
 
-    // ---- REAL QUICK SMS ----
-    async function sendQuickSMS() {
-        if(!state.api.url || !state.api.key) return showToast("API Settings Missing!", "error");
-        
-        const phone = formatPhone(document.getElementById('quick-number').value);
-        const msg = document.getElementById('quick-msg').value;
-
-        if(phone.length !== 13) return showToast("Invalid Number Format", "error");
-        if(!msg.trim()) return showToast("Message is empty", "error");
-
-        const payload = { api_key: state.api.key, senderid: state.api.sender, number: phone, message: msg };
-        
-        try {
-            showToast("Sending via API...", "info");
-            let res = await fetch(`${state.api.url}/smsapi`, {
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify(payload)
-            });
-            
-            let text = await res.text();
-            let isError = ["1001", "1002", "1003", "1004", "1005", "1006", "1007", "1012", "1032"].some(code => text.includes(code));
-            
-            if(!res.ok || isError) {
-                throw new Error(text || "API Error Response");
-            }
-            
-            showToast("SMS Sent Successfully!", "success");
-            logHistory('Quick SMS', phone, 'Success');
-            document.getElementById('quick-msg').value = '';
-            calcSMS('quick');
-            checkBalance();
-        } catch(e) {
-            let errMsg = getApiErrorMessage(e.message || "Network Error");
-            showToast(errMsg, "error");
-            logHistory('Quick SMS', phone, 'Failed');
-        }
-    }
-
-    // ================= BULK SMS & DYNAMIC ENGINE =================
+  // ================= BULK SMS & DYNAMIC ENGINE =================
     let bulkMode = 'raw';
     function toggleBulkTab(mode) {
         bulkMode = mode;
@@ -1307,88 +1268,6 @@ url : "/proxy",
         document.getElementById('bulk-cost').innerText = `৳ ${cost.toFixed(2)}`;
         return { totalNumbers, totalSmsCount };
     }
-
-    // ---- REAL BULK SMS ----
-    async function sendBulkSMS() {
-        if(!state.api.url || !state.api.key) return showToast("API Settings Missing!", "error");
-
-        const stats = calculateBulkTotal();
-        if(stats.totalNumbers === 0) return showToast("No valid numbers found!", "error");
-        
-        const templateMsg = document.getElementById('bulk-msg').value;
-        if(!templateMsg.trim()) return showToast("Message is empty!", "error");
-
-        if(!confirm(`Launch campaign to ${stats.totalNumbers} contacts?\nTotal SMS Parts: ${stats.totalSmsCount}\nEst. Cost: ৳ ${(stats.totalSmsCount * COST_PER_SMS).toFixed(2)}`)) return;
-
-        showToast("Processing API Campaign...", "info");
-        
-        let finalMessages = [];
-
-        if(bulkMode === 'file') {
-            state.bulkState.fileData.forEach(row => {
-                let phone = formatPhone(row[state.bulkState.phoneCol]);
-                if(phone.length === 13) {
-                    let msg = templateMsg;
-                    state.bulkState.fileHeaders.forEach(h => {
-                        let val = row[h] !== undefined ? row[h] : '';
-                        msg = msg.replace(new RegExp(`{{${h}}}`, 'g'), val);
-                    });
-                    finalMessages.push({ to: phone, message: msg });
-                }
-            });
-        } else {
-            let targetNumbers = [];
-            if(bulkMode === 'raw') targetNumbers = state.bulkState.raw;
-            if(bulkMode === 'groups') {
-                let numSet = new Set();
-                state.bulkState.selectedGroups.forEach(gId => {
-                    let group = state.groups.find(g => g.id === gId);
-                    if(group) group.numbers.forEach(n => numSet.add(n));
-                });
-                targetNumbers = Array.from(numSet);
-            }
-            targetNumbers.forEach(num => finalMessages.push({ to: num, message: templateMsg }));
-        }
-
-        const payload = {
-            api_key: state.api.key,
-            senderid: state.api.sender,
-            messages: finalMessages
-        };
-
-        try {
-            let res = await fetch(`${state.api.url}/smsapimany`, {
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify(payload)
-            });
-            
-            let text = await res.text();
-            let isError = ["1001", "1002", "1003", "1004", "1005", "1006", "1007", "1012", "1032"].some(code => text.includes(code));
-            
-            if(!res.ok || isError) {
-                throw new Error(text || "API Error Response");
-            }
-            
-            showToast(`Campaign sent to ${stats.totalNumbers} contacts!`, "success");
-            logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Success');
-            document.getElementById('bulk-msg').value = '';
-            
-            if(bulkMode === 'raw') {
-                document.getElementById('bulk-numbers').value = '';
-                state.bulkState.raw = [];
-                processBulkNumbers();
-            } else if (bulkMode === 'file') {
-                clearFile();
-            }
-            checkBalance();
-        } catch(e) {
-            let errMsg = getApiErrorMessage(e.message || "Network Error");
-            showToast(errMsg, "error");
-            logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Failed');
-        }
-    }
-
     // ================= FILE UPLOAD FOR CONTACTS & GROUPS =================
     async function importContactsFromFile(e) {
         const file = e.target.files[0];
@@ -1821,7 +1700,7 @@ url : "/proxy",
         localStorage.setItem('ns_hist', JSON.stringify(state.history));
     }
 
-    // ---- REAL BALANCE API FETCH ----
+        // ---- REAL BALANCE API FETCH ----
     async function checkBalance() {
         if(!state.api.url || !state.api.key) {
             document.getElementById('dash-balance').innerText = `৳ 0.00`;
@@ -1835,28 +1714,147 @@ url : "/proxy",
             let res = await fetch(`${state.api.url}/balance?api_key=${state.api.key}`);
             let dataText = await res.text();
             
-            // Validate API Errors using the exact logic
-            let isError = ["1001", "1002", "1006", "1007", "1012", "1032"].some(code => dataText.includes(code));
-            if (!res.ok || isError) throw new Error(dataText);
-            
-            let balanceVal = 0;
-            try {
+            // কড়া চেক: রেজাল্টে অবশ্যই 202 অথবা balance থাকতে হবে
+            if (dataText.includes("202") || dataText.includes("balance")) {
                 let data = JSON.parse(dataText);
-                balanceVal = data.balance || 0;
-            } catch(jsonErr) {
-                let parsed = parseFloat(dataText);
-                if(!isNaN(parsed)) balanceVal = parsed;
+                let balanceVal = data.balance || 0;
+                document.getElementById('dash-balance').innerText = `৳ ${parseFloat(balanceVal).toFixed(2)}`;
+            } else {
+                throw new Error(dataText);
             }
-
-            document.getElementById('dash-balance').innerText = `৳ ${parseFloat(balanceVal).toFixed(2)}`;
         } catch(e) {
             let errMsg = getApiErrorMessage(e.message || "Network Error");
+            // যদি প্রক্সি কাজ না করে HTML পেজ চলে আসে, তবে এই মেসেজটি দেখাবে
+            if(e.message && e.message.includes("<html")) errMsg = "প্রক্সি/সার্ভার কাজ করছে না (Netlify _redirects চেক করুন)";
             showToast(errMsg, "error");
             document.getElementById('dash-balance').innerText = `Error`;
         } finally {
             if(icon) icon.classList.remove('animate-spin');
         }
     }
+
+    // ---- REAL QUICK SMS ----
+    async function sendQuickSMS() {
+        if(!state.api.url || !state.api.key) return showToast("API Settings Missing!", "error");
+        
+        const phone = formatPhone(document.getElementById('quick-number').value);
+        const msg = document.getElementById('quick-msg').value;
+
+        if(phone.length !== 13) return showToast("Invalid Number Format", "error");
+        if(!msg.trim()) return showToast("Message is empty", "error");
+
+        const payload = { api_key: state.api.key, senderid: state.api.sender, number: phone, message: msg };
+        
+        try {
+            showToast("Sending via API...", "info");
+            let res = await fetch(`${state.api.url}/smsapi`, {
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify(payload)
+            });
+            
+            let text = await res.text();
+            
+            // কড়া চেক: রেজাল্টে অবশ্যই 202 লেখা থাকতে হবে
+            if (text.includes("202")) {
+                showToast("SMS Sent Successfully!", "success");
+                logHistory('Quick SMS', phone, 'Success');
+                document.getElementById('quick-msg').value = '';
+                calcSMS('quick');
+                checkBalance();
+            } else {
+                throw new Error(text || "API Error Response");
+            }
+        } catch(e) {
+            let errMsg = getApiErrorMessage(e.message || "Network Error");
+            if(e.message && e.message.includes("<html")) errMsg = "প্রক্সি/সার্ভার কাজ করছে না (Netlify _redirects চেক করুন)";
+            showToast(errMsg, "error");
+            logHistory('Quick SMS', phone, 'Failed');
+        }
+    }
+
+    // ---- REAL BULK SMS ----
+    async function sendBulkSMS() {
+        if(!state.api.url || !state.api.key) return showToast("API Settings Missing!", "error");
+
+        const stats = calculateBulkTotal();
+        if(stats.totalNumbers === 0) return showToast("No valid numbers found!", "error");
+        
+        const templateMsg = document.getElementById('bulk-msg').value;
+        if(!templateMsg.trim()) return showToast("Message is empty!", "error");
+
+        if(!confirm(`Launch campaign to ${stats.totalNumbers} contacts?\nTotal SMS Parts: ${stats.totalSmsCount}\nEst. Cost: ৳ ${(stats.totalSmsCount * COST_PER_SMS).toFixed(2)}`)) return;
+
+        showToast("Processing API Campaign...", "info");
+        
+        let finalMessages = [];
+
+        if(bulkMode === 'file') {
+            state.bulkState.fileData.forEach(row => {
+                let phone = formatPhone(row[state.bulkState.phoneCol]);
+                if(phone.length === 13) {
+                    let msg = templateMsg;
+                    state.bulkState.fileHeaders.forEach(h => {
+                        let val = row[h] !== undefined ? row[h] : '';
+                        msg = msg.replace(new RegExp(`{{${h}}}`, 'g'), val);
+                    });
+                    finalMessages.push({ to: phone, message: msg });
+                }
+            });
+        } else {
+            let targetNumbers = [];
+            if(bulkMode === 'raw') targetNumbers = state.bulkState.raw;
+            if(bulkMode === 'groups') {
+                let numSet = new Set();
+                state.bulkState.selectedGroups.forEach(gId => {
+                    let group = state.groups.find(g => g.id === gId);
+                    if(group) group.numbers.forEach(n => numSet.add(n));
+                });
+                targetNumbers = Array.from(numSet);
+            }
+            targetNumbers.forEach(num => finalMessages.push({ to: num, message: templateMsg }));
+        }
+
+        const payload = {
+            api_key: state.api.key,
+            senderid: state.api.sender,
+            messages: finalMessages
+        };
+
+        try {
+            let res = await fetch(`${state.api.url}/smsapimany`, {
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify(payload)
+            });
+            
+            let text = await res.text();
+            
+            // কড়া চেক: রেজাল্টে অবশ্যই 202 লেখা থাকতে হবে
+            if (text.includes("202")) {
+                showToast(`Campaign sent to ${stats.totalNumbers} contacts!`, "success");
+                logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Success');
+                document.getElementById('bulk-msg').value = '';
+                
+                if(bulkMode === 'raw') {
+                    document.getElementById('bulk-numbers').value = '';
+                    state.bulkState.raw = [];
+                    processBulkNumbers();
+                } else if (bulkMode === 'file') {
+                    clearFile();
+                }
+                checkBalance();
+            } else {
+                throw new Error(text || "API Error Response");
+            }
+        } catch(e) {
+            let errMsg = getApiErrorMessage(e.message || "Network Error");
+            if(e.message && e.message.includes("<html")) errMsg = "প্রক্সি/সার্ভার কাজ করছে না (Netlify _redirects চেক করুন)";
+            showToast(errMsg, "error");
+            logHistory(bulkMode === 'file' ? 'Dynamic Campaign' : 'Bulk Campaign', `${stats.totalNumbers} Numbers`, 'Failed');
+        }
+    }
+
 
     function logHistory(type, target, status) {
         state.history.unshift({
