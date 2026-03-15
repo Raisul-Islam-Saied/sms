@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nexsms-premium-v6';
+const CACHE_NAME = 'nexsms-premium-v7'; // 🚀 ছোট হাতের const দেওয়া হলো এবং ভার্সন বাড়ানো হলো
 
 // যে ফাইলগুলো অফলাইনে চলার জন্য সেভ থাকবে
 const STATIC_ASSETS = [
@@ -30,7 +30,7 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// ৩. Fetch Event - স্মার্ট রাউটিং (API এবং Static Files আলাদা করা)
+// ৩. Fetch Event - স্মার্ট রাউটিং (CDN সহ সব ক্যাশ করবে)
 self.addEventListener('fetch', (event) => {
     const req = event.request;
     const url = new URL(req.url);
@@ -41,19 +41,22 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // বাকি সব কিছুর জন্য "Stale-While-Revalidate" রুল
-    // অর্থাৎ, ইউজারকে সাথে সাথে ক্যাশ থেকে অ্যাপ দেখাবে, আর ব্যাকগ্রাউন্ডে নতুন ফাইল আনবে
+    // 🚀 ম্যাজিক: বাকি সব কিছুর জন্য "Stale-While-Revalidate" (Tailwind, Fonts, Icons সব ক্যাশ করবে)
     event.respondWith(
         caches.match(req).then((cachedRes) => {
             const networkFetch = fetch(req).then((networkRes) => {
-                // ফাইল ঠিক থাকলে ক্যাশে সেভ করে রাখবে
-                if (networkRes && networkRes.status === 200 && networkRes.type === 'basic') {
+                // ফাইল ঠিক থাকলে (এমনকি অন্য ওয়েবসাইটের CDN হলেও) ক্যাশে সেভ করে রাখবে
+                if (networkRes && (networkRes.status === 200 || networkRes.status === 0)) {
                     const clone = networkRes.clone();
                     caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
                 }
                 return networkRes;
             }).catch(() => {
-                // ইন্টারনেট না থাকলে কোনো এরর দেবে না, ক্যাশ করা ডাটাই দেখাবে
+                // ইন্টারনেট না থাকলে কোনো এরর দেবে না, জাস্ট ক্যাশ থেকে ডাটা দেখিয়ে দেবে
+                console.log('অফলাইন মোড অ্যাক্টিভ: ' + req.url);
+                if (cachedRes) {
+                    return cachedRes;
+                }
             });
 
             return cachedRes || networkFetch;
