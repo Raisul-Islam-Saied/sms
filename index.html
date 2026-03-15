@@ -1643,11 +1643,8 @@ function getApiErrorMessage(code) {
         renderGroups();
         closeAllSheets();
     }
-
-
-    // --- Select Contacts into Group ---
-        // === কন্টাক্ট সিলেক্টরের নতুন লজিক ===
-    let targetForContacts = 'group'; // এটি ট্র্যাক করবে যে কন্টাক্টগুলো Raw বক্সে যাবে নাকি Group এ
+    // === কন্টাক্ট সিলেক্টরের নতুন লজিক (Raw & Group) ===
+    let targetForContacts = 'group';
 
     // Raw বক্সে কন্টাক্ট আনার ফাংশন
     function openRawContactSelector() {
@@ -1655,16 +1652,18 @@ function getApiErrorMessage(code) {
         state.tempSelectedGroupContacts = [];
         document.getElementById('gsc-search').value = '';
         renderGroupContactSelector();
+        playSound('modal');
         document.getElementById('sheet-overlay').classList.add('open');
         document.getElementById('group-select-contacts-sheet').classList.add('open');
     }
 
-    // গ্রুপে কন্টাক্ট আনার ফাংশন (আগেরটাই আপডেট করা)
+    // গ্রুপে কন্টাক্ট আনার ফাংশন
     function openGroupContactSelector() {
         targetForContacts = 'group';
         state.tempSelectedGroupContacts = [];
         document.getElementById('gsc-search').value = '';
         renderGroupContactSelector();
+        playSound('modal');
         document.getElementById('manage-group-sheet').classList.remove('open');
         document.getElementById('group-select-contacts-sheet').classList.add('open');
     }
@@ -1678,42 +1677,25 @@ function getApiErrorMessage(code) {
         }
     }
 
-    function confirmGroupContactSelection() {
-        // যদি Raw বক্সে যোগ করতে বলা হয়
-        if (targetForContacts === 'raw') {
-            let textarea = document.getElementById('bulk-numbers');
-            let currentVals = textarea.value.trim();
-            let newVals = state.tempSelectedGroupContacts.join('\n');
-            
-            // বক্সে আগে থেকে নম্বর থাকলে তার সাথে নতুনগুলো যোগ হবে
-            textarea.value = currentVals ? currentVals + '\n' + newVals : newVals;
-            processBulkNumbers(); // অটোমেটিক কাউন্ট আপডেট করবে
-            
-            closeGroupContactSelector();
-            showToast(`Added ${state.tempSelectedGroupContacts.length} contacts!`, "success");
-            return;
-        }
+    // এই ফাংশনটি মিসিং ছিল, তাই ক্লিক করলে কাজ করছিল না!
+    function renderGroupContactSelector() {
+        let search = document.getElementById('gsc-search').value.toLowerCase();
+        let filtered = state.allContacts.filter(c => c.name.toLowerCase().includes(search) || c.phone.includes(search));
+        filtered.sort((a,b) => a.name.localeCompare(b.name));
 
-        // যদি গ্রুপে যোগ করতে বলা হয় (আগের লজিক)
-        let id = parseInt(document.getElementById('mg-id').value);
-        let g = state.groups.find(x => x.id === id);
-        if(!g) return;
-
-        let added = 0;
-        state.tempSelectedGroupContacts.forEach(phone => {
-            if(!g.numbers.includes(phone)) {
-                g.numbers.push(phone);
-                added++;
-            }
-        });
-
-        if(added > 0) {
-            saveData();
-            renderGroupNumbers(g);
-            renderGroups();
-            showToast(`Added ${added} contacts to group`, "success");
-        }
-        closeGroupContactSelector();
+        let html = filtered.map(c => {
+            let isChecked = state.tempSelectedGroupContacts.includes(c.phone) ? 'checked' : '';
+            return `
+            <label class="flex items-center gap-3 p-3 bg-white border border-slate-50 rounded-xl cursor-pointer active:bg-slate-50">
+                <input type="checkbox" class="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary" value="${c.phone}" onchange="toggleTempContact(this)" ${isChecked}>
+                <div class="flex-1">
+                    <p class="font-bold text-sm text-slate-800">${c.name}</p>
+                    <p class="text-[10px] text-slate-500 font-mono">${c.phone}</p>
+                </div>
+            </label>
+            `;
+        }).join('');
+        document.getElementById('gsc-list').innerHTML = html || '<p class="text-xs text-slate-400 text-center mt-4">No contacts found.</p>';
     }
 
     function toggleTempContact(checkbox) {
@@ -1722,6 +1704,22 @@ function getApiErrorMessage(code) {
     }
 
     function confirmGroupContactSelection() {
+        // যদি Raw বক্সে যোগ করতে বলা হয়
+        if (targetForContacts === 'raw') {
+            let textarea = document.getElementById('bulk-numbers');
+            let currentVals = textarea.value.trim();
+            let newVals = state.tempSelectedGroupContacts.join('\n');
+            
+            // বক্সে আগে থেকে নম্বর থাকলে তার সাথে নতুনগুলো যোগ হবে (মাঝে নতুন লাইন দিয়ে)
+            textarea.value = currentVals ? currentVals + '\n' + newVals : newVals;
+            processBulkNumbers(); // অটোমেটিক কাউন্ট আপডেট করবে
+            
+            closeGroupContactSelector();
+            showToast(`Added ${state.tempSelectedGroupContacts.length} contacts!`, "success");
+            return;
+        }
+
+        // যদি গ্রুপে যোগ করতে বলা হয়
         let id = parseInt(document.getElementById('mg-id').value);
         let g = state.groups.find(x => x.id === id);
         if(!g) return;
@@ -1742,8 +1740,6 @@ function getApiErrorMessage(code) {
         }
         closeGroupContactSelector();
     }
-
-
     function renderBulkGroups() {
         let html = state.groups.map(g => `
             <label class="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl cursor-pointer shadow-sm">
