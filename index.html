@@ -332,6 +332,21 @@
         </div>
     </div>
 
+        <div id="custom-confirm" class="full-overlay" style="display: none; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 9999;">
+        <div class="bg-white p-6 rounded-3xl w-10/12 max-w-[340px] text-center shadow-2xl transform scale-95 transition-transform duration-300" id="custom-confirm-box">
+            <div id="confirm-icon-bg" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-indigo-50 text-indigo-600">
+                <i data-lucide="help-circle" id="confirm-icon" class="w-8 h-8"></i>
+            </div>
+            <h2 id="confirm-title" class="text-xl font-bold text-slate-800 mb-2">Are you sure?</h2>
+            <p id="confirm-msg" class="text-sm text-slate-500 mb-6 whitespace-pre-wrap leading-relaxed">Message goes here...</p>
+            
+            <div class="flex gap-3">
+                <button id="confirm-cancel-btn" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-bold active:scale-95 transition-transform">Cancel</button>
+                <button id="confirm-ok-btn" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-transform">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Lock Screen -->
     <div id="lock-screen" class="full-overlay" style="display: none;">
         <div class="mb-8 text-center">
@@ -919,9 +934,10 @@ function getApiErrorMessage(code) {
         }
     }
 
-    function setupPin() {
+        async function setupPin() {
         if(state.pin) {
-            if(confirm("Remove App PIN?")) {
+            let isConfirmed = await showCustomConfirm("Remove PIN", "Are you sure you want to disable App Lock?", { isDanger: true, okText: "Remove" });
+            if(isConfirmed) {
                 state.pin = null;
                 localStorage.removeItem('ns_pin');
                 location.reload();
@@ -1451,8 +1467,9 @@ function getApiErrorMessage(code) {
         showToast("Contact Saved", "success");
     }
 
-    function deleteContact(id) {
-        if(!confirm("Delete this contact?")) return;
+        async function deleteContact(id) {
+        let isConfirmed = await showCustomConfirm("Delete Contact", "Are you sure you want to remove this contact from your phonebook?", { isDanger: true, okText: "Delete" });
+        if(!isConfirmed) return;
         state.allContacts = state.allContacts.filter(c => c.id !== id);
         saveData();
         renderAllContacts();
@@ -1553,14 +1570,16 @@ function getApiErrorMessage(code) {
         renderGroups();
     }
 
-    function deleteCurrentGroup() {
-        if(!confirm("Delete this entire group?")) return;
+        async function deleteCurrentGroup() {
+        let isConfirmed = await showCustomConfirm("Delete Group", "Delete this entire group and its contacts?", { isDanger: true, okText: "Delete" });
+        if(!isConfirmed) return;
         let id = parseInt(document.getElementById('mg-id').value);
         state.groups = state.groups.filter(x => x.id !== id);
         saveData();
         renderGroups();
         closeAllSheets();
     }
+
 
     // --- Select Contacts into Group ---
     function openGroupContactSelector() {
@@ -1818,9 +1837,10 @@ function getApiErrorMessage(code) {
         
         const templateMsg = document.getElementById('bulk-msg').value;
         if(!templateMsg.trim()) return showToast("Message is empty!", "error");
-
-        if(!confirm(`Launch campaign to ${stats.totalNumbers} contacts?\nTotal SMS Parts: ${stats.totalSmsCount}\nEst. Cost: ৳ ${(stats.totalSmsCount * COST_PER_SMS).toFixed(2)}`)) return;
-
+    // sendBulkSMS ফাংশনের ভেতরে আগের confirm লাইনটি মুছে এটি দিন:
+    let confirmText = `Launch campaign to ${stats.totalNumbers} contacts?\nTotal SMS Parts: ${stats.totalSmsCount}\nEst. Cost: ৳ ${(stats.totalSmsCount * COST_PER_SMS).toFixed(2)}`;
+    let isConfirmed = await showCustomConfirm("Confirm Campaign", confirmText, { okText: "Launch" });
+    if(!isConfirmed) return;
         showToast("Processing API Campaign...", "info");
         
         let finalMessages = [];
@@ -1969,13 +1989,62 @@ function getApiErrorMessage(code) {
         setTimeout(() => document.getElementById('history-modal').style.display = 'none', 300);
     }
 
-
-    function clearHistory() {
-        if(confirm("Clear logs?")) {
+    async function clearHistory() {
+        let isConfirmed = await showCustomConfirm("Clear Logs?", "Are you sure you want to delete all activity logs?", { isDanger: true, okText: "Clear All" });
+        if(isConfirmed) {
             state.history = [];
             saveData();
             renderHistory();
         }
+    }
+    // ================= PREMIUM CONFIRM DIALOG =================
+    function showCustomConfirm(title, message, options = {}) {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('custom-confirm');
+            const box = document.getElementById('custom-confirm-box');
+            const iconBg = document.getElementById('confirm-icon-bg');
+            const okBtn = document.getElementById('confirm-ok-btn');
+            const icon = document.getElementById('confirm-icon');
+            
+            // ডাটা বসানো
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-msg').innerText = message;
+            document.getElementById('confirm-cancel-btn').innerText = options.cancelText || 'Cancel';
+            okBtn.innerText = options.okText || 'Confirm';
+            
+            // ডিলিট/বিপজ্জনক কাজের জন্য লাল রঙ (Danger Mode)
+            if (options.isDanger) {
+                iconBg.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-50 text-red-500';
+                icon.setAttribute('data-lucide', 'alert-triangle');
+                okBtn.className = 'flex-1 bg-red-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-red-200 active:scale-95 transition-transform';
+            } else {
+                iconBg.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-indigo-50 text-indigo-600';
+                icon.setAttribute('data-lucide', 'help-circle');
+                okBtn.className = 'flex-1 bg-primary text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 active:scale-95 transition-transform';
+            }
+            
+            lucide.createIcons();
+            
+            // মডাল ওপেন করা
+            overlay.style.display = 'flex';
+            setTimeout(() => box.classList.remove('scale-95'), 10);
+            if (navigator.vibrate) navigator.vibrate(40);
+            
+            // বাটন হ্যান্ডলার
+            const closeAndResolve = (val) => {
+                box.classList.add('scale-95');
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    resolve(val);
+                }, 200); // অ্যানিমেশনের জন্য অপেক্ষা
+                
+                okBtn.onclick = null;
+                document.getElementById('confirm-cancel-btn').onclick = null;
+            };
+            
+            okBtn.onclick = () => closeAndResolve(true);
+            document.getElementById('confirm-cancel-btn').onclick = () => closeAndResolve(false);
+        });
     }
 
 </script>
